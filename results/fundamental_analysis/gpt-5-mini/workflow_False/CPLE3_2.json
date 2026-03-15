@@ -1,0 +1,180 @@
+{
+    "usage": {
+        "requests": 2,
+        "input_tokens": 155492,
+        "output_tokens": 7059,
+        "total_tokens": 162551
+    },
+    "steps": [
+        {
+            "id": "rs_0e3f7c0fb529b6ac00697693cbaa4081949e52454d2c2514be",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Calculations for Companhia Paranaense de Energia (COPEL) - Dec 2024\\nfrom decimal import Decimal\\n# Given values (\u00daLTIMO = Dec 31, 2024)\\nativo_total = 57384156000.0\\nativo_circulante = 13041808000.0\\ncaixa_equiv = 4161939000.0\\naplicacoes_fin = 632000.0\\ndisponibilidades = caixa_equiv + aplicacoes_fin\\n\\npassivo_circulante = 10342380000.0\\nfornecedores = 2324423000.0\\n\\nativo_nao_circulante = 44342348000.0\\npatrimonio_liq = 25636935000.0\\n\\n# Debt\\nemp_cur = 3256315000.0\\nemp_noncur = 13989844000.0\\ndiv_bruta = emp_cur + emp_noncur\\ndiv_liquida = div_bruta - disponibilidades\\n\\n# Income statement (12 months)\\nreceita_12 = 22651036000.0\\nebit_12 = 4064248000.0\\nlucro_liq_12 = 2799370000.0\\nlucro_controladora = 2809631000.0\\n\\n# Income statement (9 months) - up to Sep 30 2024\\nreceita_9m = 16631872000.0\\nebit_9m = 3141617000.0\\nlucro_9m = 2224206000.0\\n\\n# Q4 (3 months) = 12m - 9m\\nreceita_q4 = receita_12 - receita_9m\\nebit_q4 = ebit_12 - ebit_9m\\nlucro_q4 = lucro_liq_12 - lucro_9m\\n\\n# Shares\\ntotal_shares_issued = 2982810591\\ntotal_treasury = 5698400\\nshares_outstanding = total_shares_issued - total_treasury\\n\\n# Market\\nprice = 9.96\\nmarket_cap = price * shares_outstanding\\n\\n# Per-share metrics\\nlpa = lucro_controladora / shares_outstanding\\nebitps = ebit_12 / shares_outstanding\\nrevps = receita_12 / shares_outstanding\\nativos_ps = ativo_total / shares_outstanding\\ncap_giro = ativo_circulante - passivo_circulante\\ncap_giro_ps = cap_giro / shares_outstanding\\nativ_circ_liq = cap_giro  # using same\\nativ_circ_liq_ps = ativ_circ_liq / shares_outstanding\\n\\n# Depreciation/Amortization (reten\u00e7\u00f5es)\\ndep_amort = 1465478000.0\\nebitda = ebit_12 + dep_amort\\n\\n# EV\\nev = market_cap + div_liquida\\n\\n# Ratios\\npl = price / lpa if lpa!=0 else None\\nvp = ativos_ps and (price / (patrimonio_liq / shares_outstanding))\\n# P/EBIT as price / (EBIT per share)\\npebit = price / ebitps if ebitps!=0 else None\\npsr = price / revps if revps!=0 else None\\np_ativos = price / (ativo_total / shares_outstanding)\\np_cap_giro = price / cap_giro_ps if cap_giro_ps!=0 else None\\np_ativ_circ_liq = price / ativ_circ_liq_ps if ativ_circ_liq_ps!=0 else None\\n\\nev_ebitda = ev / ebitda if ebitda!=0 else None\\nev_ebit = ev / ebit_12 if ebit_12!=0 else None\\n\\nvpa = patrimonio_liq / shares_outstanding\\n\\nmarg_bruta = (4891244000.0 / receita_12) * 100\\nmarg_ebit = (ebit_12 / receita_12) * 100\\nmarg_liq = (lucro_liq_12 / receita_12) * 100\\n\\nebit_div_ativo = (ebit_12 / ativo_total) * 100\\n\\n# ROIC = EBIT / (Ativo - Fornecedores - Caixa)\\nroic = ebit_12 / (ativo_total - fornecedores - caixa_equiv) * 100\\nroe = lucro_liq_12 / patrimonio_liq * 100\\n\\nliq_corr = ativo_circulante / passivo_circulante\\n\\ndivbr_patrim = div_bruta / patrimonio_liq\\n\\ngiro_ativos = receita_12 / ativo_total\\n\\n# Prepare results\\nresults = {\\n    'Ativo': ativo_total,\\n    'Disponibilidades': disponibilidades,\\n    'Ativo Circulante': ativo_circulante,\\n    'D\u00edv. Bruta': div_bruta,\\n    'D\u00edv. L\u00edquida': div_liquida,\\n    'Patrim. L\u00cdq': patrimonio_liq,\\n    'Receita L\u00cdquida (12 meses)': receita_12,\\n    'EBIT (12 meses)': ebit_12,\\n    'Lucro L\u00cdquido (12 meses)': lucro_liq_12,\\n    'Receita L\u00cdquida (3 meses)': receita_q4,\\n    'EBIT (3 meses)': ebit_q4,\\n    'Lucro L\u00cdquido (3 meses)': lucro_q4,\\n    'P/L': pl,\\n    'P/VP': price / vpa if vpa!=0 else None,\\n    'P/EBIT': pebit,\\n    'PSR': psr,\\n    'P/Ativos': p_ativos,\\n    'P/Cap. Giro': p_cap_giro,\\n    'P/Ativ Circ Liq': p_ativ_circ_liq,\\n    'EV / EBITDA': ev_ebitda,\\n    'EV / EBIT': ev_ebit,\\n    'LPA': lpa,\\n    'VPA': vpa,\\n    'Marg. Bruta (%)': round(marg_bruta,2),\\n    'Marg. EBIT (%)': round(marg_ebit,2),\\n    'Marg. L\u00edquida (%)': round(marg_liq,2),\\n    'EBIT / Ativo (%)': round(ebit_div_ativo,2),\\n    'ROIC (%)': round(roic,2),\\n    'ROE (%)': round(roe,2),\\n    'Liquidez Corr': round(liq_corr,2),\\n    'Div Br/ Patrim': divbr_patrim,\\n    'Giro Ativos': giro_ativos\\n}\\n\\n# Print results\\nimport json\\nprint(json.dumps(results, indent=2))\\n\"} }",
+            "call_id": "call_NGbw7Af4ZjGyRJrL3l88D87q",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0e3f7c0fb529b6ac0069769428e48c8194b6e0524a30e18972",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_NGbw7Af4ZjGyRJrL3l88D87q",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'{\\\\n  \"Ativo\": 57384156000.0,\\\\n  \"Disponibilidades\": 4162571000.0,\\\\n  \"Ativo Circulante\": 13041808000.0,\\\\n  \"D\\\\\\\\u00edv. Bruta\": 17246159000.0,\\\\n  \"D\\\\\\\\u00edv. L\\\\\\\\u00edquida\": 13083588000.0,\\\\n  \"Patrim. L\\\\\\\\u00cdq\": 25636935000.0,\\\\n  \"Receita L\\\\\\\\u00cdquida (12 meses)\": 22651036000.0,\\\\n  \"EBIT (12 meses)\": 4064248000.0,\\\\n  \"Lucro L\\\\\\\\u00cdquido (12 meses)\": 2799370000.0,\\\\n  \"Receita L\\\\\\\\u00cdquida (3 meses)\": 6019164000.0,\\\\n  \"EBIT (3 meses)\": 922631000.0,\\\\n  \"Lucro L\\\\\\\\u00cdquido (3 meses)\": 575164000.0,\\\\n  \"P/L\": 10.553712363780155,\\\\n  \"P/VP\": 1.1566139798833206,\\\\n  \"P/EBIT\": 7.29582383318144,\\\\n  \"PSR\": 1.309080848326761,\\\\n  \"P/Ativos\": 0.5167286493219488,\\\\n  \"P/Cap. Giro\": 10.984563182407532,\\\\n  \"P/Ativ Circ Liq\": 10.984563182407532,\\\\n  \"EV / EBITDA\": 7.728344120913044,\\\\n  \"EV / EBIT\": 10.515014197548968,\\\\n  \"LPA\": 0.9437437421719255,\\\\n  \"VPA\": 8.61134325992218,\\\\n  \"Marg. Bruta (%)\": 21.59,\\\\n  \"Marg. EBIT (%)\": 17.94,\\\\n  \"Marg. L\\\\\\\\u00edquida (%)\": 12.36,\\\\n  \"EBIT / Ativo (%)\": 7.08,\\\\n  \"ROIC (%)\": 7.99,\\\\n  \"ROE (%)\": 10.92,\\\\n  \"Liquidez Corr\": 1.26,\\\\n  \"Div Br/ Patrim\": 0.6727075213944257,\\\\n  \"Giro Ativos\": 0.3947263073800371\\\\n}\\\\n\\'\\nStdErr:\\nb\\'\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0e3f7c0fb529b6ac006976944695c08194a77fb58a10e7798f",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_0e3f7c0fb529b6ac00697694566ed88194a51a95a950255e64",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"indicators\":[{\"indicator\":\"Ativo\",\"value\":57384156000.0},{\"indicator\":\"Disponibilidades\",\"value\":4162571000.0},{\"indicator\":\"Ativo Circulante\",\"value\":13041808000.0},{\"indicator\":\"D\u00edv. Bruta\",\"value\":17246159000.0},{\"indicator\":\"D\u00edv. L\u00edquida\",\"value\":13083588000.0},{\"indicator\":\"Patrim. L\u00edq\",\"value\":25636935000.0},{\"indicator\":\"Receita L\u00edquida (12 meses)\",\"value\":22651036000.0},{\"indicator\":\"EBIT (12 meses)\",\"value\":4064248000.0},{\"indicator\":\"Lucro L\u00edquido (12 meses)\",\"value\":2799370000.0},{\"indicator\":\"Receita L\u00edquida (3 meses)\",\"value\":6019164000.0},{\"indicator\":\"EBIT (3 meses)\",\"value\":922631000.0},{\"indicator\":\"Lucro L\u00edquido (3 meses)\",\"value\":575164000.0},{\"indicator\":\"P/L\",\"value\":10.55},{\"indicator\":\"P/VP\",\"value\":1.16},{\"indicator\":\"P/EBIT\",\"value\":7.30},{\"indicator\":\"PSR\",\"value\":1.31},{\"indicator\":\"P/Ativos\",\"value\":0.52},{\"indicator\":\"P/Cap. Giro\",\"value\":10.98},{\"indicator\":\"P/Ativ Circ Liq\",\"value\":10.98},{\"indicator\":\"EV / EBITDA\",\"value\":7.73},{\"indicator\":\"EV / EBIT\",\"value\":10.52},{\"indicator\":\"LPA\",\"value\":0.94},{\"indicator\":\"VPA\",\"value\":8.61},{\"indicator\":\"Marg. Bruta\",\"value\":21.59},{\"indicator\":\"Marg. EBIT\",\"value\":17.94},{\"indicator\":\"Marg. L\u00edquida\",\"value\":12.36},{\"indicator\":\"EBIT / Ativo\",\"value\":7.08},{\"indicator\":\"ROIC\",\"value\":7.99},{\"indicator\":\"ROE\",\"value\":10.92},{\"indicator\":\"Liquidez Corr\",\"value\":1.26},{\"indicator\":\"Div Br/ Patrim\",\"value\":0.67},{\"indicator\":\"Giro Ativos\",\"value\":0.39}]}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 148.96441292762756,
+    "output": {
+        "indicators": [
+            {
+                "indicator": "Ativo",
+                "value": 57384156000.0
+            },
+            {
+                "indicator": "Disponibilidades",
+                "value": 4162571000.0
+            },
+            {
+                "indicator": "Ativo Circulante",
+                "value": 13041808000.0
+            },
+            {
+                "indicator": "D\u00edv. Bruta",
+                "value": 17246159000.0
+            },
+            {
+                "indicator": "D\u00edv. L\u00edquida",
+                "value": 13083588000.0
+            },
+            {
+                "indicator": "Patrim. L\u00edq",
+                "value": 25636935000.0
+            },
+            {
+                "indicator": "Receita L\u00edquida (12 meses)",
+                "value": 22651036000.0
+            },
+            {
+                "indicator": "EBIT (12 meses)",
+                "value": 4064248000.0
+            },
+            {
+                "indicator": "Lucro L\u00edquido (12 meses)",
+                "value": 2799370000.0
+            },
+            {
+                "indicator": "Receita L\u00edquida (3 meses)",
+                "value": 6019164000.0
+            },
+            {
+                "indicator": "EBIT (3 meses)",
+                "value": 922631000.0
+            },
+            {
+                "indicator": "Lucro L\u00edquido (3 meses)",
+                "value": 575164000.0
+            },
+            {
+                "indicator": "P/L",
+                "value": 10.55
+            },
+            {
+                "indicator": "P/VP",
+                "value": 1.16
+            },
+            {
+                "indicator": "P/EBIT",
+                "value": 7.3
+            },
+            {
+                "indicator": "PSR",
+                "value": 1.31
+            },
+            {
+                "indicator": "P/Ativos",
+                "value": 0.52
+            },
+            {
+                "indicator": "P/Cap. Giro",
+                "value": 10.98
+            },
+            {
+                "indicator": "P/Ativ Circ Liq",
+                "value": 10.98
+            },
+            {
+                "indicator": "EV / EBITDA",
+                "value": 7.73
+            },
+            {
+                "indicator": "EV / EBIT",
+                "value": 10.52
+            },
+            {
+                "indicator": "LPA",
+                "value": 0.94
+            },
+            {
+                "indicator": "VPA",
+                "value": 8.61
+            },
+            {
+                "indicator": "Marg. Bruta",
+                "value": 21.59
+            },
+            {
+                "indicator": "Marg. EBIT",
+                "value": 17.94
+            },
+            {
+                "indicator": "Marg. L\u00edquida",
+                "value": 12.36
+            },
+            {
+                "indicator": "EBIT / Ativo",
+                "value": 7.08
+            },
+            {
+                "indicator": "ROIC",
+                "value": 7.99
+            },
+            {
+                "indicator": "ROE",
+                "value": 10.92
+            },
+            {
+                "indicator": "Liquidez Corr",
+                "value": 1.26
+            },
+            {
+                "indicator": "Div Br/ Patrim",
+                "value": 0.67
+            },
+            {
+                "indicator": "Giro Ativos",
+                "value": 0.39
+            }
+        ]
+    }
+}
