@@ -8,12 +8,10 @@ from agents import RunResult
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-import src.experiments.investment_house.fundamental_analyst as fundamental_analyst
-import src.experiments.investment_house.manager as financial_manager
 from src.db import get_stock_daily_info
 from src.db.base_query import ResponseFormat
 from src.experiments import ExperimentMetadata, Intensity, Model
-from src.experiments.investment_house.config import STOCKS
+from src.experiments.manager import STOCKS, fundamental_analyst, financial_manager
 from src.experiments.utils import get_result
 from src.financial_agents.financial_analyst import IndicatorOutput
 from src.settings import WRITE_FOLDER

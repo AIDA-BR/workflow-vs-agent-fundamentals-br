@@ -3,8 +3,8 @@ import time
 from dotenv import load_dotenv
 
 from src.experiments import ExperimentMetadata, Intensity, Model
-from src.experiments.agent import run as run_agent
-from src.experiments.workflow import run as run_workflow
+from src.experiments.fundamental_analysis.agent import run as run_agent
+from src.experiments.fundamental_analysis.workflow import run as run_workflow
 from src.financial_agents.financial_analyst import IndicatorOutput
 from src.settings import WRITE_FOLDER
 

@@ -7,8 +7,9 @@ import time
 from agents import Agent, ModelSettings, Runner, RunResult
 from openai.types.shared import Reasoning
 
+from src.db.base_query import run_sql_query
 from src.experiments import ExperimentMetadata
-from src.experiments.config import STOCKS
+from src.experiments.fundamental_analysis.config import STOCKS
 from src.experiments.utils import save_results
 from src.financial_agents import get_agent
 from src.financial_agents.financial_analyst import (
@@ -16,37 +17,72 @@ from src.financial_agents.financial_analyst import (
     Indicator,
     IndicatorOutput,
 )
-from src.settings import PRICE_FILE
-from src.tools import code_interpreter, cvm_base_query_tool, cvm_composition_query_tool
+from src.settings import DB_PATH, PRICE_FILE
+from src.tools import code_interpreter
 
 TEMPLATE_INPUT = """Fazer análise fundamentalista da empresa {name} (CNPJ {cnpj}) em Dezembro de 2024 com cotação a {price_str} reais.
+
+# Relatório DFP/ITR de Dezembro de 2024
+{report}
+
+# Composição de ativos de Dezembro de 2024
+{composition}
+
+# Relatório DFP/ITR do Trimestre Anterior
+{previous_report}
 
 Feedback: {feedback}"""
 
 
 def init_agent(experiment_metadata: ExperimentMetadata) -> Agent:
     model_settings = ModelSettings(tool_choice="required")
-    if experiment_metadata.reasoning is not None:
+    if experiment_metadata.reasoning:
         reasoning = Reasoning(effort=experiment_metadata.reasoning)
         model_settings = ModelSettings(
             reasoning=reasoning,
             verbosity=experiment_metadata.verbosity,
         )
 
-    agent = get_agent(
+    return get_agent(
         name="financial_analyst",
         instructions=FINANCIAL_ANALYST_INSTRUCTION,
         tools=[
             code_interpreter,
-            cvm_base_query_tool,
-            cvm_composition_query_tool,
         ],
         servers=[],
         model=experiment_metadata.model,
         model_settings=model_settings,
         output_type=IndicatorOutput,
     )
-    return agent
+
+
+def get_stock_report(cnpj: str, date: str) -> str:
+    query = f"""
+    SELECT ACCOUNT_NUMBER, ACCOUNT_NAME, ACCOUNT_VALUE, VERSION, EXERC_ORDER, ANALYSIS_START_PERIOD_DATE, ANALYSIS_END_PERIOD_DATE
+    FROM DFP_ITR_CVM
+    WHERE CNPJ = '{cnpj}' AND REPORT_DATE = '{date}'
+    ORDER BY ACCOUNT_NUMBER;"""
+
+    result = run_sql_query({"sql_query": query}, db_path=DB_PATH)
+    return result.get("report", "")
+
+
+def get_stock_composition(cnpj: str, date: str) -> str:
+    query = f"""
+    SELECT
+        REPORT_DATE,
+        COMPANY_NAME,
+        ORDINARY_SHARES_ISSUED,
+        ORDINARY_SHARES_TREASURY,
+        PREFERRED_SHARES_ISSUED,
+        PREFERRED_SHARES_TREASURY,
+        TOTAL_SHARES_ISSUED,
+        TOTAL_SHARES_TREASURY
+    FROM CVM_SHARE_COMPOSITION
+    WHERE CNPJ = '{cnpj}' AND REPORT_DATE = '{date}';"""
+
+    result = run_sql_query({"sql_query": query}, db_path=DB_PATH)
+    return result.get("report", "")
 
 
 def analyse(
@@ -54,12 +90,23 @@ def analyse(
     name: str,
     cnpj: str,
     price: str,
+    report: str,
+    composition: str,
+    previous_report: str,
     experiment_metadata: ExperimentMetadata,
 ) -> RunResult:
     feedback = "Compute todos os indicadores fundamentalistas disponíveis"
 
-    inp_data = TEMPLATE_INPUT.format(name=name, cnpj=cnpj, price_str=price, feedback=feedback)
-    # agent
+    inp_data = TEMPLATE_INPUT.format(
+        name=name,
+        cnpj=cnpj,
+        price_str=price,
+        report=report,
+        composition=composition,
+        previous_report=previous_report,
+        feedback=feedback,
+    )
+
     return asyncio.run(Runner.run(agent, input=inp_data, max_turns=experiment_metadata.max_turns))
 
 
@@ -68,6 +115,9 @@ def guardrail(
     name: str,
     cnpj: str,
     price: str,
+    report: str,
+    composition: str,
+    previous_report: str,
     result: RunResult,
     experiment_metadata: ExperimentMetadata,
 ) -> RunResult:
@@ -82,7 +132,15 @@ def guardrail(
         feedback = (
             f"Compute SOMENTE os seguintes indicadores fundamentalistas: {missing_indicators}"
         )
-        inp_data = TEMPLATE_INPUT.format(name=name, cnpj=cnpj, price_str=price, feedback=feedback)
+        inp_data = TEMPLATE_INPUT.format(
+            name=name,
+            cnpj=cnpj,
+            price_str=price,
+            report=report,
+            composition=composition,
+            previous_report=previous_report,
+            feedback=feedback,
+        )
         reflected_result = asyncio.run(
             Runner.run(agent, input=inp_data, max_turns=experiment_metadata.max_turns)
         )
@@ -110,17 +168,7 @@ def guardrail(
 
 
 def run(experiment_metadata: ExperimentMetadata, n_times: int = 3):
-    """
-    Runs the experiment on all the stocks in the PRICE_FILE CSV file.
-
-    Parameters:
-    experiment_metadata (ExperimentMetadata): The experiment metadata object.
-    n_times (int): The number of times to run the experiment. Defaults to 3.
-
-    Returns:
-    None
-    """
-    write_folder = f"{experiment_metadata.write_folder}/{experiment_metadata.model}/agent_{experiment_metadata.reflection}"
+    write_folder = f"{experiment_metadata.write_folder}/{experiment_metadata.model}/workflow_{experiment_metadata.reflection}"
     os.makedirs(write_folder, exist_ok=True)
     with open(f"""{write_folder}/experiment_metadata.json""", "w") as f:
         json.dump(experiment_metadata.model_dump(), f, indent=4)
@@ -137,11 +185,17 @@ def run(experiment_metadata: ExperimentMetadata, n_times: int = 3):
                 continue
             print(stock, experiment_id)
             start = time.time()
+            report = get_stock_report(cnpj=cnpj, date="2024-12-31")
+            composition = get_stock_composition(cnpj=cnpj, date="2024-12-31")
+            previous_report = get_stock_report(cnpj=cnpj, date="2024-09-30")
             result = analyse(
                 agent=agent,
                 name=name,
                 cnpj=cnpj,
                 price=price_str,
+                report=report,
+                composition=composition,
+                previous_report=previous_report,
                 experiment_metadata=experiment_metadata,
             )
             if experiment_metadata.reflection:
@@ -150,6 +204,9 @@ def run(experiment_metadata: ExperimentMetadata, n_times: int = 3):
                     name=name,
                     cnpj=cnpj,
                     price=price_str,
+                    report=report,
+                    composition=composition,
+                    previous_report=previous_report,
                     result=result,
                     experiment_metadata=experiment_metadata,
                 )
