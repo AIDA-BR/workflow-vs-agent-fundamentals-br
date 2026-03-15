@@ -2,11 +2,11 @@ import asyncio
 
 from agents import Agent, ModelSettings, Runner, RunResult
 from datetime import datetime
-from experiments import ExperimentMetadata, Model, Intensity, StockInput
+from src.experiments import ExperimentMetadata, Model, Intensity, StockInput
 from openai.types.shared import Reasoning
-from tools import code_interpreter
-from financial_agents import get_agent
-from financial_agents.financial_manager import (
+from src.tools import code_interpreter
+from src.financial_agents import get_agent
+from src.financial_agents.financial_manager import (
     MANAGER_INSTRUCTIONS,
     FinanceOutput,
 )

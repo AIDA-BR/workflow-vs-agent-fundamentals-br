@@ -1,6 +1,4 @@
-from experiments import StockInput
-
-PRICE_FILE = "/Users/thiagocastroferreira/Desktop/kubernetes/mcp-tutorial/fundamental_analysis/2025-04-17/fundamental_analysis.csv"
+from src.experiments import StockInput
 
 STOCKS = [
     StockInput(name="Alupar Investimento", cnpj="08.364.948/0001-38", stock_id="ALUP11"),

@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 from src.db import get_stock_daily_info
 from src.db.base_query import ResponseFormat
 from src.experiments import ExperimentMetadata, Intensity, Model
-from src.experiments.manager import STOCKS, fundamental_analyst, financial_manager
+from src.experiments.manager import fundamental_analyst, manager as financial_manager
+from src.experiments.manager.config import STOCKS
 from src.experiments.utils import get_result
 from src.financial_agents.financial_analyst import IndicatorOutput
 from src.settings import WRITE_FOLDER
