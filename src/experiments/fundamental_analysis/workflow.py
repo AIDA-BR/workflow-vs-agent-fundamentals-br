@@ -7,20 +7,20 @@ import time
 from agents import Agent, ModelSettings, Runner, RunResult
 from openai.types.shared import Reasoning
 
-from src.db.base_query import run_sql_query
+from src.db.base_query import ResponseFormat, run_sql_query
 from src.experiments import ExperimentMetadata
 from src.experiments.fundamental_analysis.config import STOCKS
 from src.experiments.utils import save_results
 from src.financial_agents import get_agent
 from src.financial_agents.financial_analyst import (
     FINANCIAL_ANALYST_INSTRUCTION,
-    Indicator,
-    IndicatorOutput,
+    RawIndicator,
+    RawIndicatorOutput,
+    compute_indicators,
 )
 from src.settings import DB_PATH, PRICE_FILE
-from src.tools import code_interpreter
 
-TEMPLATE_INPUT = """Fazer análise fundamentalista da empresa {name} (CNPJ {cnpj}) em Dezembro de 2024 com cotação a {price_str} reais.
+TEMPLATE_INPUT = """Extrair indicadores financeiros brutos da empresa {name} (CNPJ {cnpj}) em Dezembro de 2024.
 
 # Relatório DFP/ITR de Dezembro de 2024
 {report}
@@ -46,13 +46,11 @@ def init_agent(experiment_metadata: ExperimentMetadata) -> Agent:
     return get_agent(
         name="financial_analyst",
         instructions=FINANCIAL_ANALYST_INSTRUCTION,
-        tools=[
-            code_interpreter,
-        ],
+        tools=[],
         servers=[],
         model=experiment_metadata.model,
         model_settings=model_settings,
-        output_type=IndicatorOutput,
+        output_type=RawIndicatorOutput,
     )
 
 
@@ -85,6 +83,24 @@ def get_stock_composition(cnpj: str, date: str) -> str:
     return result.get("report", "")
 
 
+def get_total_shares(cnpj: str, date: str) -> float:
+    query = f"""
+    SELECT TOTAL_SHARES_ISSUED, TOTAL_SHARES_TREASURY
+    FROM CVM_SHARE_COMPOSITION
+    WHERE CNPJ = '{cnpj}' AND REPORT_DATE = '{date}';"""
+
+    result = run_sql_query(
+        {"sql_query": query}, db_path=DB_PATH, response_format=ResponseFormat.DICT
+    )
+    rows = result.get("report", [])
+    if not rows or not isinstance(rows, list):
+        return 0.0
+    row = rows[0]
+    issued = float(row.get("TOTAL_SHARES_ISSUED") or 0)
+    treasury = float(row.get("TOTAL_SHARES_TREASURY") or 0)
+    return issued - treasury
+
+
 def analyse(
     agent: Agent,
     name: str,
@@ -95,7 +111,7 @@ def analyse(
     previous_report: str,
     experiment_metadata: ExperimentMetadata,
 ) -> RunResult:
-    feedback = "Compute todos os indicadores fundamentalistas disponíveis"
+    feedback = "Extraia todos os indicadores financeiros brutos disponíveis no relatório"
 
     inp_data = TEMPLATE_INPUT.format(
         name=name,
@@ -121,17 +137,17 @@ def guardrail(
     result: RunResult,
     experiment_metadata: ExperimentMetadata,
 ) -> RunResult:
-    all_indicators = [str(i) for i in Indicator]
+    all_raw = [str(i) for i in RawIndicator]
+    extracted = {str(i.indicator) for i in result.final_output.indicators}
     missing_indicators = [
-        str(i.indicator)
-        for i in result.final_output.indicators
-        if str(i.indicator) not in all_indicators or i.value == 0
+        r
+        for r in all_raw
+        if r not in extracted
+        or next((i.value for i in result.final_output.indicators if str(i.indicator) == r), 0) == 0
     ]
     if len(missing_indicators) > 0:
         # reflection
-        feedback = (
-            f"Compute SOMENTE os seguintes indicadores fundamentalistas: {missing_indicators}"
-        )
+        feedback = f"Extraia SOMENTE os seguintes indicadores do relatório: {missing_indicators}"
         inp_data = TEMPLATE_INPUT.format(
             name=name,
             cnpj=cnpj,
@@ -210,6 +226,14 @@ def run(experiment_metadata: ExperimentMetadata, n_times: int = 3):
                     result=result,
                     experiment_metadata=experiment_metadata,
                 )
+
+            # compute derived indicators arithmetically from raw LLM output
+            total_shares = get_total_shares(cnpj=cnpj, date="2024-12-31")
+            result.final_output = compute_indicators(
+                raw=result.final_output,
+                price=price,
+                total_shares=total_shares,
+            )
             end = time.time()
 
             save_results(
