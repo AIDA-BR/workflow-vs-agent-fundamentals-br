@@ -4,21 +4,17 @@ from enum import StrEnum
 FINANCIAL_ANALYST_INSTRUCTION = """Você é um analista de mercado especializado em extrair dados financeiros brutos de relatórios DFP/ITR da CVM.
 
 Os seguintes campos já foram obtidos diretamente do banco de dados contábil e NÃO devem ser extraídos:
-Ativo, Disponibilidades, Ativo Circulante, Passivo Circulante, Dív. Bruta, Receita Líquida, Lucro Bruto.
+Ativo, Disponibilidades, Ativo Circulante, Passivo Circulante, Dív. Bruta, Receita Líquida, Lucro Bruto,
+Patrimônio Líquido, Lucro Líquido (12 meses), Lucro Líquido (3 meses).
 
-Sua tarefa é extrair APENAS os seguintes 7 campos do relatório fornecido:
+Sua tarefa é extrair APENAS os seguintes 4 campos do relatório fornecido:
 
-Patrim. Líq: Patrimônio Líquido total — conta 2.03 do Balanço Patrimonial.
 EBIT (12 meses): Lucro antes de juros e impostos — acumulado dos últimos 12 meses.
   ATENÇÃO: use Lucro Bruto menos Despesas Operacionais (Vendas + Administrativas).
   NÃO inclua resultado de equivalência patrimonial, receitas financeiras nem receitas de construção de ativos próprios.
 EBITDA (12 meses): EBIT mais Depreciação e Amortização dos últimos 12 meses.
   Consulte o valor de D&A na DVA (conta 7.04.01 "Depreciação, Amortização e Exaustão") ou nas notas explicativas.
-Lucro Líquido (12 meses): Lucro líquido atribuível aos acionistas da controladora (conta 3.11.01 do DRE), acumulado dos últimos 12 meses.
-  NÃO use o Lucro Líquido consolidado total (conta 3.11).
 EBIT (3 meses): EBIT do trimestre atual, usando a mesma definição do EBIT anual.
-  Para relatórios com valores acumulados, calcule a diferença entre o período atual e o trimestre anterior.
-Lucro Líquido (3 meses): Lucro líquido atribuível aos acionistas da controladora do trimestre atual.
   Para relatórios com valores acumulados, calcule a diferença entre o período atual e o trimestre anterior.
 Fornecedores: Contas a pagar a fornecedores — subgrupo do Passivo Circulante (conta 2.01.02).
 
@@ -69,14 +65,11 @@ class Indicator(StrEnum):
 
 
 class RawIndicator(StrEnum):
-    """The 7 fields the LLM must extract — all other base fields come from the DB."""
+    """The 4 fields the LLM must extract — all other base fields come from the DB."""
 
-    PATRIMONIO_LIQUIDO = "Patrim. Líq"
     EBIT_ANUAL = "EBIT (12 meses)"
     EBITDA_ANUAL = "EBITDA (12 meses)"
-    LUCRO_LIQUIDO_ANUAL = "Lucro Líquido (12 meses)"
     EBIT_TRIMESTRE = "EBIT (3 meses)"
-    LUCRO_LIQUIDO_TRIMESTRE = "Lucro Líquido (3 meses)"
     FORNECEDORES = "Fornecedores"
 
     def __str__(self):
@@ -89,9 +82,12 @@ DB_DISPONIBILIDADES = "Disponibilidades"
 DB_ATIVO_CIRCULANTE = "Ativo Circulante"
 DB_PASSIVO_CIRCULANTE = "Passivo Circulante"
 DB_DIVIDA_BRUTA = "Dív. Bruta"
+DB_PATRIMONIO_LIQUIDO = "Patrim. Líq"
 DB_RECEITA_LIQUIDA_ANUAL = "Receita Líquida (12 meses)"
 DB_LUCRO_BRUTO_ANUAL = "Lucro Bruto (12 meses)"
+DB_LUCRO_LIQUIDO_ANUAL = "Lucro Líquido (12 meses)"
 DB_RECEITA_LIQUIDA_TRIMESTRE = "Receita Líquida (3 meses)"
+DB_LUCRO_LIQUIDO_TRIMESTRE = "Lucro Líquido (3 meses)"
 
 
 class IndicatorValue(BaseModel):
@@ -131,32 +127,30 @@ def compute_indicators(
     """Computes all derived financial indicators from LLM-extracted fields and DB-fetched base data.
 
     Args:
-        raw: The 7 fields extracted by the LLM (EBIT, EBITDA, LL, Patrim. Líq, Fornecedores, …).
-        db_fields: The 8 base fields fetched directly from the CVM database (Ativo, Disponibilidades,
-            Ativo Circulante, Passivo Circulante, Dív. Bruta, Receita Líquida anual/trimestral,
-            Lucro Bruto). Use the DB_* constants as keys.
+        raw: The 4 fields extracted by the LLM (EBIT anual/trimestral, EBITDA, Fornecedores).
+        db_fields: The 11 base fields fetched directly from the CVM database. Use DB_* constants as keys.
         price: Stock price in BRL.
         total_shares: Number of outstanding shares.
     """
     raw_map = {str(i.indicator): i.value for i in raw.indicators}
 
-    # --- 8 fields from DB ---
+    # --- 11 fields from DB ---
     ativo = db_fields.get(DB_ATIVO, 0.0)
     disponibilidades = db_fields.get(DB_DISPONIBILIDADES, 0.0)
     ativo_circulante = db_fields.get(DB_ATIVO_CIRCULANTE, 0.0)
     passivo_circulante = db_fields.get(DB_PASSIVO_CIRCULANTE, 0.0)
     divida_bruta = db_fields.get(DB_DIVIDA_BRUTA, 0.0)
+    patrimonio_liquido = db_fields.get(DB_PATRIMONIO_LIQUIDO, 0.0)
     receita_liquida_anual = db_fields.get(DB_RECEITA_LIQUIDA_ANUAL, 0.0)
     lucro_bruto_anual = db_fields.get(DB_LUCRO_BRUTO_ANUAL, 0.0)
+    lucro_liquido_anual = db_fields.get(DB_LUCRO_LIQUIDO_ANUAL, 0.0)
     receita_liquida_trimestre = db_fields.get(DB_RECEITA_LIQUIDA_TRIMESTRE, 0.0)
+    lucro_liquido_trimestre = db_fields.get(DB_LUCRO_LIQUIDO_TRIMESTRE, 0.0)
 
-    # --- 7 fields from LLM ---
-    patrimonio_liquido = raw_map.get(str(RawIndicator.PATRIMONIO_LIQUIDO), 0.0)
+    # --- 4 fields from LLM ---
     ebit_anual = raw_map.get(str(RawIndicator.EBIT_ANUAL), 0.0)
     ebitda_anual = raw_map.get(str(RawIndicator.EBITDA_ANUAL), 0.0)
-    lucro_liquido_anual = raw_map.get(str(RawIndicator.LUCRO_LIQUIDO_ANUAL), 0.0)
     ebit_trimestre = raw_map.get(str(RawIndicator.EBIT_TRIMESTRE), 0.0)
-    lucro_liquido_trimestre = raw_map.get(str(RawIndicator.LUCRO_LIQUIDO_TRIMESTRE), 0.0)
     fornecedores = raw_map.get(str(RawIndicator.FORNECEDORES), 0.0)
 
     # --- Derived intermediaries ---

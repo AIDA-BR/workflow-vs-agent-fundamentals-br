@@ -18,7 +18,10 @@ from src.financial_agents.financial_analyst import (
     DB_DISPONIBILIDADES,
     DB_DIVIDA_BRUTA,
     DB_LUCRO_BRUTO_ANUAL,
+    DB_LUCRO_LIQUIDO_ANUAL,
+    DB_LUCRO_LIQUIDO_TRIMESTRE,
     DB_PASSIVO_CIRCULANTE,
+    DB_PATRIMONIO_LIQUIDO,
     DB_RECEITA_LIQUIDA_ANUAL,
     DB_RECEITA_LIQUIDA_TRIMESTRE,
     FINANCIAL_ANALYST_INSTRUCTION,
@@ -109,12 +112,31 @@ def get_total_shares(cnpj: str, date: str) -> float:
     return issued - treasury
 
 
-def _db_account(cnpj: str, account: str, date: str) -> float:
-    """Returns ACCOUNT_VALUE for a single CVM account (EXERC_ORDER='ÚLTIMO'), or 0.0."""
+def _db_account(
+    cnpj: str,
+    account: str,
+    date: str,
+    exerc_order: str = "ÚLTIMO",
+    period: str = "any",
+) -> float:
+    """Returns ACCOUNT_VALUE for a single CVM account, or 0.0 if not found.
+
+    Args:
+        period: 'any' (no filter), 'accumulated' (start month = Jan, for DRE ytd),
+                'quarterly' (start month != Jan, for isolated quarter in ITRs).
+    """
+    period_filter = ""
+    if period == "accumulated":
+        period_filter = "AND strftime('%m', ANALYSIS_START_PERIOD_DATE) = '01'"
+    elif period == "quarterly":
+        period_filter = "AND strftime('%m', ANALYSIS_START_PERIOD_DATE) != '01'"
+
     query = f"""
     SELECT ACCOUNT_VALUE FROM DFP_ITR_CVM
     WHERE CNPJ = '{cnpj}' AND REPORT_DATE = '{date}'
-      AND ACCOUNT_NUMBER = '{account}' AND EXERC_ORDER = 'ÚLTIMO';"""
+      AND ACCOUNT_NUMBER = '{account}' AND EXERC_ORDER = '{exerc_order}'
+      {period_filter}
+    ORDER BY CAST(VERSION AS INTEGER) DESC LIMIT 1;"""
     result = run_sql_query(
         {"sql_query": query}, db_path=DB_PATH, response_format=ResponseFormat.DICT
     )
@@ -124,33 +146,59 @@ def _db_account(cnpj: str, account: str, date: str) -> float:
     return float(rows[0].get("ACCOUNT_VALUE") or 0)
 
 
+def _db_account_with_fallback(
+    cnpj: str,
+    primary: str,
+    fallback: str,
+    date: str,
+    exerc_order: str = "ÚLTIMO",
+    period: str = "any",
+) -> float:
+    """Returns primary account value; falls back to fallback account when primary is 0.0.
+
+    Used for 3.11.01 (LL controladora) → 3.11 (LL consolidado) for companies in judicial
+    recovery that do not publish the controller/minority split.
+    """
+    value = _db_account(cnpj, primary, date, exerc_order=exerc_order, period=period)
+    if value != 0.0:
+        return value
+    return _db_account(cnpj, fallback, date, exerc_order=exerc_order, period=period)
+
+
 def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
-    """Fetches the 8 base financial fields directly from the CVM database.
+    """Fetches the 11 base financial fields directly from the CVM database.
 
     These fields have standardized account numbers across all companies and match
-    the gold reference data with < 0.2% error (balance sheet) and < 0.1% error (revenue).
-    The LLM is therefore not asked to extract them.
+    the gold reference data with < 0.01% error. The LLM is not asked to extract them.
 
     Account mapping:
-      Ativo                   → 1
-      Disponibilidades        → 1.01.01 + 1.01.02
-      Ativo Circulante        → 1.01
-      Passivo Circulante      → 2.01
-      Dív. Bruta              → 2.01.04 + 2.02.01
-      Receita Líquida (12m)   → 3.01  (ÚLTIMO, DFP date)
-      Lucro Bruto (12m)       → 3.03  (ÚLTIMO, DFP date)
-      Receita Líquida (3m)    → 3.01 DFP − 3.01 ITR  (quarterly subtraction)
+      Ativo                    → 1
+      Disponibilidades         → 1.01.01 + 1.01.02
+      Ativo Circulante         → 1.01
+      Passivo Circulante       → 2.01
+      Dív. Bruta               → 2.01.04 + 2.02.01
+      Patrim. Líq.             → 2.03 − 2.03.09  (total menos minoritários)
+      Receita Líquida (12m)    → 3.01  (ÚLTIMO, DFP date)
+      Lucro Bruto (12m)        → 3.03  (ÚLTIMO, DFP date)
+      Lucro Líquido (12m)      → 3.11.01 fallback 3.11  (ÚLTIMO, DFP date)
+      Receita Líquida (3m)     → 3.01 DFP − 3.01 ITR acumulado  (subtração)
+      Lucro Líquido (3m)       → 3.11.01 fallback 3.11  (DFP − ITR acumulado)
     """
     ativo = _db_account(cnpj, "1", date)
     disponibilidades = _db_account(cnpj, "1.01.01", date) + _db_account(cnpj, "1.01.02", date)
     ativo_circulante = _db_account(cnpj, "1.01", date)
     passivo_circulante = _db_account(cnpj, "2.01", date)
     divida_bruta = _db_account(cnpj, "2.01.04", date) + _db_account(cnpj, "2.02.01", date)
+    patrimonio_liquido = _db_account(cnpj, "2.03", date) - _db_account(cnpj, "2.03.09", date)
     receita_liquida_anual = _db_account(cnpj, "3.01", date)
     lucro_bruto_anual = _db_account(cnpj, "3.03", date)
+    lucro_liquido_anual = _db_account_with_fallback(cnpj, "3.11.01", "3.11", date)
     receita_liquida_trimestre = _db_account(cnpj, "3.01", date) - _db_account(
-        cnpj, "3.01", prev_date
+        cnpj, "3.01", prev_date, period="accumulated"
     )
+    lucro_liquido_trimestre = _db_account_with_fallback(
+        cnpj, "3.11.01", "3.11", date
+    ) - _db_account_with_fallback(cnpj, "3.11.01", "3.11", prev_date, period="accumulated")
 
     return {
         DB_ATIVO: ativo,
@@ -158,9 +206,12 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
         DB_ATIVO_CIRCULANTE: ativo_circulante,
         DB_PASSIVO_CIRCULANTE: passivo_circulante,
         DB_DIVIDA_BRUTA: divida_bruta,
+        DB_PATRIMONIO_LIQUIDO: patrimonio_liquido,
         DB_RECEITA_LIQUIDA_ANUAL: receita_liquida_anual,
         DB_LUCRO_BRUTO_ANUAL: lucro_bruto_anual,
+        DB_LUCRO_LIQUIDO_ANUAL: lucro_liquido_anual,
         DB_RECEITA_LIQUIDA_TRIMESTRE: receita_liquida_trimestre,
+        DB_LUCRO_LIQUIDO_TRIMESTRE: lucro_liquido_trimestre,
     }
 
 
