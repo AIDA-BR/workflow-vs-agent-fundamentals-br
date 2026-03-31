@@ -13,6 +13,14 @@ from src.experiments.fundamental_analysis.config import STOCKS
 from src.experiments.utils import save_results
 from src.financial_agents import get_agent
 from src.financial_agents.financial_analyst import (
+    DB_ATIVO,
+    DB_ATIVO_CIRCULANTE,
+    DB_DISPONIBILIDADES,
+    DB_DIVIDA_BRUTA,
+    DB_LUCRO_BRUTO_ANUAL,
+    DB_PASSIVO_CIRCULANTE,
+    DB_RECEITA_LIQUIDA_ANUAL,
+    DB_RECEITA_LIQUIDA_TRIMESTRE,
     FINANCIAL_ANALYST_INSTRUCTION,
     RawIndicator,
     RawIndicatorOutput,
@@ -99,6 +107,61 @@ def get_total_shares(cnpj: str, date: str) -> float:
     issued = float(row.get("TOTAL_SHARES_ISSUED") or 0)
     treasury = float(row.get("TOTAL_SHARES_TREASURY") or 0)
     return issued - treasury
+
+
+def _db_account(cnpj: str, account: str, date: str) -> float:
+    """Returns ACCOUNT_VALUE for a single CVM account (EXERC_ORDER='ÚLTIMO'), or 0.0."""
+    query = f"""
+    SELECT ACCOUNT_VALUE FROM DFP_ITR_CVM
+    WHERE CNPJ = '{cnpj}' AND REPORT_DATE = '{date}'
+      AND ACCOUNT_NUMBER = '{account}' AND EXERC_ORDER = 'ÚLTIMO';"""
+    result = run_sql_query(
+        {"sql_query": query}, db_path=DB_PATH, response_format=ResponseFormat.DICT
+    )
+    rows = result.get("report", [])
+    if not rows or not isinstance(rows, list):
+        return 0.0
+    return float(rows[0].get("ACCOUNT_VALUE") or 0)
+
+
+def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
+    """Fetches the 8 base financial fields directly from the CVM database.
+
+    These fields have standardized account numbers across all companies and match
+    the gold reference data with < 0.2% error (balance sheet) and < 0.1% error (revenue).
+    The LLM is therefore not asked to extract them.
+
+    Account mapping:
+      Ativo                   → 1
+      Disponibilidades        → 1.01.01 + 1.01.02
+      Ativo Circulante        → 1.01
+      Passivo Circulante      → 2.01
+      Dív. Bruta              → 2.01.04 + 2.02.01
+      Receita Líquida (12m)   → 3.01  (ÚLTIMO, DFP date)
+      Lucro Bruto (12m)       → 3.03  (ÚLTIMO, DFP date)
+      Receita Líquida (3m)    → 3.01 DFP − 3.01 ITR  (quarterly subtraction)
+    """
+    ativo = _db_account(cnpj, "1", date)
+    disponibilidades = _db_account(cnpj, "1.01.01", date) + _db_account(cnpj, "1.01.02", date)
+    ativo_circulante = _db_account(cnpj, "1.01", date)
+    passivo_circulante = _db_account(cnpj, "2.01", date)
+    divida_bruta = _db_account(cnpj, "2.01.04", date) + _db_account(cnpj, "2.02.01", date)
+    receita_liquida_anual = _db_account(cnpj, "3.01", date)
+    lucro_bruto_anual = _db_account(cnpj, "3.03", date)
+    receita_liquida_trimestre = _db_account(cnpj, "3.01", date) - _db_account(
+        cnpj, "3.01", prev_date
+    )
+
+    return {
+        DB_ATIVO: ativo,
+        DB_DISPONIBILIDADES: disponibilidades,
+        DB_ATIVO_CIRCULANTE: ativo_circulante,
+        DB_PASSIVO_CIRCULANTE: passivo_circulante,
+        DB_DIVIDA_BRUTA: divida_bruta,
+        DB_RECEITA_LIQUIDA_ANUAL: receita_liquida_anual,
+        DB_LUCRO_BRUTO_ANUAL: lucro_bruto_anual,
+        DB_RECEITA_LIQUIDA_TRIMESTRE: receita_liquida_trimestre,
+    }
 
 
 def analyse(
@@ -227,10 +290,12 @@ def run(experiment_metadata: ExperimentMetadata, n_times: int = 3):
                     experiment_metadata=experiment_metadata,
                 )
 
-            # compute derived indicators arithmetically from raw LLM output
+            # fetch base fields from DB and compute all derived indicators arithmetically
+            db_fields = get_db_fields(cnpj=cnpj, date="2024-12-31", prev_date="2024-09-30")
             total_shares = get_total_shares(cnpj=cnpj, date="2024-12-31")
             result.final_output = compute_indicators(
                 raw=result.final_output,
+                db_fields=db_fields,
                 price=price,
                 total_shares=total_shares,
             )
