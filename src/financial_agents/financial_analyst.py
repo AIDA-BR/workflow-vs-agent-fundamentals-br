@@ -47,13 +47,6 @@ class Indicator(StrEnum):
         return self.value
 
 
-class RawIndicator(StrEnum):
-    """All base fields now come from the DB. No LLM extraction required."""
-
-    def __str__(self):
-        return self.value
-
-
 # Keys used in db_fields dict passed to compute_indicators()
 DB_ATIVO = "Ativo"
 DB_DISPONIBILIDADES = "Disponibilidades"
@@ -83,17 +76,6 @@ class IndicatorOutput(BaseModel):
     )
 
 
-class RawIndicatorValue(BaseModel):
-    indicator: RawIndicator = Field(alias="indicator", description="Indicador Financeiro Bruto")
-    value: float = Field(alias="value", description="Valor do Indicador")
-
-
-class RawIndicatorOutput(BaseModel):
-    indicators: list[RawIndicatorValue] = Field(
-        alias="indicators", description="Indicadores Financeiros Brutos"
-    )
-
-
 def _safe_div(numerator: float, denominator: float) -> float:
     if denominator == 0.0:
         return 0.0
@@ -101,7 +83,6 @@ def _safe_div(numerator: float, denominator: float) -> float:
 
 
 def compute_indicators(
-    _raw: RawIndicatorOutput,
     db_fields: dict[str, float],
     price: float,
     total_shares: float,
@@ -109,7 +90,6 @@ def compute_indicators(
     """Computes all derived financial indicators entirely from DB-fetched base data.
 
     Args:
-        raw: Unused — kept for API compatibility. All fields now come from db_fields.
         db_fields: The 15 base fields fetched directly from the CVM database. Use DB_* constants as keys.
         price: Stock price in BRL.
         total_shares: Number of outstanding shares.
