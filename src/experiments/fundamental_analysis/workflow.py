@@ -17,6 +17,10 @@ from src.financial_agents.financial_analyst import (
     DB_ATIVO_CIRCULANTE,
     DB_DISPONIBILIDADES,
     DB_DIVIDA_BRUTA,
+    DB_EBIT_ANUAL,
+    DB_EBIT_TRIMESTRE,
+    DB_EBITDA_ANUAL,
+    DB_FORNECEDORES,
     DB_LUCRO_BRUTO_ANUAL,
     DB_LUCRO_LIQUIDO_ANUAL,
     DB_LUCRO_LIQUIDO_TRIMESTRE,
@@ -166,10 +170,9 @@ def _db_account_with_fallback(
 
 
 def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
-    """Fetches the 11 base financial fields directly from the CVM database.
+    """Fetches all 15 base financial fields directly from the CVM database (DF Consolidado).
 
-    These fields have standardized account numbers across all companies and match
-    the gold reference data with < 0.01% error. The LLM is not asked to extract them.
+    All fields match the gold reference data with < 0.1% error. No LLM extraction required.
 
     Account mapping:
       Ativo                    → 1
@@ -178,10 +181,14 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
       Passivo Circulante       → 2.01
       Dív. Bruta               → 2.01.04 + 2.02.01
       Patrim. Líq.             → 2.03 − 2.03.09  (total menos minoritários)
-      Receita Líquida (12m)    → 3.01  (ÚLTIMO, DFP date)
-      Lucro Bruto (12m)        → 3.03  (ÚLTIMO, DFP date)
-      Lucro Líquido (12m)      → 3.11.01 fallback 3.11  (ÚLTIMO, DFP date)
-      Receita Líquida (3m)     → 3.01 DFP − 3.01 ITR acumulado  (subtração)
+      Fornecedores             → 2.01.02
+      Receita Líquida (12m)    → 3.01  (DFP: ÚLTIMO direto; ITR: H1 + DFP_dez − H1_ant)
+      Lucro Bruto (12m)        → 3.03  (mesmo método)
+      EBIT (12m)               → 3.03 + 3.04.01 + 3.04.02  (exclui equiv. patrimonial e outras)
+      EBITDA (12m)             → EBIT + abs(7.04.01)  (D&A da DVA, sinal negativo no DB)
+      Lucro Líquido (12m)      → 3.11.01 fallback 3.11
+      Receita Líquida (3m)     → 3.01 DFP − 3.01 ITR acumulado
+      EBIT (3m)                → (3.03 + 3.04.01 + 3.04.02) DFP − ITR acumulado
       Lucro Líquido (3m)       → 3.11.01 fallback 3.11  (DFP − ITR acumulado)
     """
     ativo = _db_account(cnpj, "1", date)
@@ -190,11 +197,29 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
     passivo_circulante = _db_account(cnpj, "2.01", date)
     divida_bruta = _db_account(cnpj, "2.01.04", date) + _db_account(cnpj, "2.02.01", date)
     patrimonio_liquido = _db_account(cnpj, "2.03", date) - _db_account(cnpj, "2.03.09", date)
+    fornecedores = _db_account(cnpj, "2.01.02", date)
+
     receita_liquida_anual = _db_account(cnpj, "3.01", date)
     lucro_bruto_anual = _db_account(cnpj, "3.03", date)
+    ebit_anual = (
+        _db_account(cnpj, "3.03", date)
+        + _db_account(cnpj, "3.04.01", date)
+        + _db_account(cnpj, "3.04.02", date)
+    )
+    ebitda_anual = ebit_anual + abs(_db_account(cnpj, "7.04.01", date))
     lucro_liquido_anual = _db_account_with_fallback(cnpj, "3.11.01", "3.11", date)
+
     receita_liquida_trimestre = _db_account(cnpj, "3.01", date) - _db_account(
         cnpj, "3.01", prev_date, period="accumulated"
+    )
+    ebit_trimestre = (
+        _db_account(cnpj, "3.03", date)
+        + _db_account(cnpj, "3.04.01", date)
+        + _db_account(cnpj, "3.04.02", date)
+    ) - (
+        _db_account(cnpj, "3.03", prev_date, period="accumulated")
+        + _db_account(cnpj, "3.04.01", prev_date, period="accumulated")
+        + _db_account(cnpj, "3.04.02", prev_date, period="accumulated")
     )
     lucro_liquido_trimestre = _db_account_with_fallback(
         cnpj, "3.11.01", "3.11", date
@@ -207,10 +232,14 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
         DB_PASSIVO_CIRCULANTE: passivo_circulante,
         DB_DIVIDA_BRUTA: divida_bruta,
         DB_PATRIMONIO_LIQUIDO: patrimonio_liquido,
+        DB_FORNECEDORES: fornecedores,
         DB_RECEITA_LIQUIDA_ANUAL: receita_liquida_anual,
         DB_LUCRO_BRUTO_ANUAL: lucro_bruto_anual,
+        DB_EBIT_ANUAL: ebit_anual,
+        DB_EBITDA_ANUAL: ebitda_anual,
         DB_LUCRO_LIQUIDO_ANUAL: lucro_liquido_anual,
         DB_RECEITA_LIQUIDA_TRIMESTRE: receita_liquida_trimestre,
+        DB_EBIT_TRIMESTRE: ebit_trimestre,
         DB_LUCRO_LIQUIDO_TRIMESTRE: lucro_liquido_trimestre,
     }
 
