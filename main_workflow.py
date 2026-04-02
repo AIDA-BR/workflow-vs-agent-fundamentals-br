@@ -13,8 +13,13 @@ from src.db.base_query import ResponseFormat
 from src.experiments import ExperimentMetadata, Intensity, Model
 from src.experiments.manager import fundamental_analyst, manager as financial_manager
 from src.experiments.manager.config import STOCKS
+from src.experiments.manager.material_facts_report import (
+    format_six_month_report,
+    get_six_month_summary,
+)
 from src.experiments.utils import get_result
 from src.financial_agents.financial_analyst import IndicatorOutput
+from src.financial_agents.material_facts_summarizer import MonthlySummary
 from src.settings import WRITE_FOLDER
 
 load_dotenv()
@@ -140,6 +145,7 @@ def _save_results(
 if __name__ == "__main__":
     manager_decisions = []
     fundamental_analyses = []
+    monthly_summary_cache: dict = {}
 
     experiment = ExperimentMetadata(
         model=Model.GPT_5_MINI,
@@ -157,6 +163,14 @@ if __name__ == "__main__":
 
         with open(f"{experiment.write_folder}/decisions_sample.json") as f:
             manager_decisions = json.load(f)
+
+    cache_path = f"{experiment.write_folder}/monthly_summary_cache.json"
+    if os.path.exists(cache_path):
+        with open(cache_path) as f:
+            raw_cache = json.load(f)
+        for k, v in raw_cache.items():
+            parts = k.split("|")
+            monthly_summary_cache[(parts[0], int(parts[1]), int(parts[2]))] = MonthlySummary(**v)
 
     while True:
         is_error = False
@@ -236,12 +250,21 @@ if __name__ == "__main__":
                             .tail(12)
                         )
 
+                        six_month_summary = get_six_month_summary(
+                            stock=stock,
+                            analysis_date=analysis_date,
+                            experiment_metadata=experiment,
+                            cache=monthly_summary_cache,
+                        )
+                        material_facts_report_str = format_six_month_report(six_month_summary)
+
                         decision = financial_manager.run(
                             stock=stock,
                             stock_price=daily_stock_price,
                             date=analysis_date,
                             experiment_metadata=experiment,
                             indicators=indicators.to_string(),
+                            material_facts_report=material_facts_report_str,
                         )
 
                         end_time = time.time()
@@ -269,6 +292,13 @@ if __name__ == "__main__":
 
                         with open(f"{experiment.write_folder}/decisions_sample.json", "w") as f:
                             json.dump(manager_decisions, f, indent=4)
+
+                        serializable_cache = {
+                            f"{k[0]}|{k[1]}|{k[2]}": v.model_dump()
+                            for k, v in monthly_summary_cache.items()
+                        }
+                        with open(cache_path, "w") as f:
+                            json.dump(serializable_cache, f, indent=4)
         except Exception:
             print("Error, retrying in 1 minute...")
             time.sleep(60)

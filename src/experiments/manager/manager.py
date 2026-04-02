@@ -16,6 +16,8 @@ Data: {date}
 Cotação: {price_str}
 
 {indicators}
+
+{material_facts_report}
 """
 
 
@@ -47,6 +49,7 @@ def analyse(
     analysis_date: datetime,
     indicators: str,
     experiment_metadata: ExperimentMetadata,
+    material_facts_report: str = "",
 ) -> RunResult:
     inp_data = TEMPLATE_INPUT.format(
         name=name,
@@ -54,6 +57,7 @@ def analyse(
         date=analysis_date.strftime("%Y-%m-%d"),
         price_str=price,
         indicators=indicators,
+        material_facts_report=material_facts_report,
     )
 
     return asyncio.run(Runner.run(agent, input=inp_data, max_turns=experiment_metadata.max_turns))
@@ -65,6 +69,7 @@ def run(
     date: str | datetime,
     indicators: str,
     experiment_metadata: ExperimentMetadata,
+    material_facts_report: str = "",
 ):
     agent = init_agent()
 
@@ -76,6 +81,7 @@ def run(
         analysis_date=date,
         indicators=indicators,
         experiment_metadata=experiment_metadata,
+        material_facts_report=material_facts_report,
     )
 
     return result
