@@ -18,7 +18,6 @@ class Intensity(StrEnum):
 class ExperimentMetadata(BaseModel):
     model: Model = Field(description="Model to be used")
     max_turns: int = Field(default=30, description="Maximum number of turns")
-    structured_output: dict = Field(description="Structured output")
     reflection: bool = Field(description="Use reflection")
     write_folder: str = Field(description="Folder to write results")
     reasoning: Intensity | None = Field(default=None, description="Reasoning intensity")

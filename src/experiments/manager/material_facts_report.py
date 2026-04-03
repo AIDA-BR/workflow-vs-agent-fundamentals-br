@@ -3,7 +3,7 @@ import asyncio
 from agents import ModelSettings, Runner
 from datetime import datetime, timedelta
 
-from src.experiments import ExperimentMetadata, StockInput
+from src.experiments import Model, StockInput
 from src.financial_agents import get_agent
 from src.financial_agents.material_facts_summarizer import (
     MONTHLY_SUMMARIZER_INSTRUCTIONS,
@@ -18,7 +18,7 @@ def get_monthly_summary(
     stock: StockInput,
     year: int,
     month: int,
-    experiment_metadata: ExperimentMetadata,
+    model: Model,
     cache: dict,
 ) -> MonthlySummary:
     cache_key = (stock.stock_id, year, month)
@@ -53,7 +53,7 @@ def get_monthly_summary(
         instructions=MONTHLY_SUMMARIZER_INSTRUCTIONS,
         tools=[],
         servers=[],
-        model=experiment_metadata.model,
+        model=model,
         model_settings=ModelSettings(),
         output_type=MonthlySummary,
     )
@@ -67,7 +67,7 @@ def get_monthly_summary(
 def get_six_month_summary(
     stock: StockInput,
     analysis_date: datetime,
-    experiment_metadata: ExperimentMetadata,
+    model: Model,
     cache: dict,
 ) -> SixMonthSummary:
     # Compute the 6 calendar months ending at the month before analysis_date
@@ -78,9 +78,7 @@ def get_six_month_summary(
         ref = ref.replace(day=1) - timedelta(days=1)
     months.reverse()
 
-    monthly_summaries = [
-        get_monthly_summary(stock, y, m, experiment_metadata, cache) for y, m in months
-    ]
+    monthly_summaries = [get_monthly_summary(stock, y, m, model, cache) for y, m in months]
 
     start_ym = f"{months[0][0]}-{months[0][1]:02d}"
     end_ym = f"{months[-1][0]}-{months[-1][1]:02d}"
@@ -98,7 +96,7 @@ def get_six_month_summary(
         instructions=SIX_MONTH_SUMMARIZER_INSTRUCTIONS,
         tools=[],
         servers=[],
-        model=experiment_metadata.model,
+        model=model,
         model_settings=ModelSettings(),
         output_type=SixMonthSummary,
     )

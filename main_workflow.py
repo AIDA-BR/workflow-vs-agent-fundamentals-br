@@ -18,7 +18,6 @@ from src.experiments.manager.material_facts_report import (
     get_six_month_summary,
 )
 from src.experiments.utils import get_result
-from src.financial_agents.financial_analyst import IndicatorOutput
 from src.financial_agents.material_facts_summarizer import MonthlySummary
 from src.settings import WRITE_FOLDER
 
@@ -151,7 +150,6 @@ if __name__ == "__main__":
         model=Model.GPT_5_MINI,
         write_folder=WRITE_FOLDER,
         max_turns=15,
-        structured_output=IndicatorOutput.model_json_schema(),
         reasoning=Intensity.MEDIUM,
         verbosity=Intensity.MEDIUM,
         reflection=False,
@@ -205,7 +203,6 @@ if __name__ == "__main__":
                             stock=stock,
                             stock_price=daily_stock_price,
                             date=report_date,
-                            experiment_metadata=experiment,
                         )
 
                         end_time = time.time()
@@ -253,7 +250,7 @@ if __name__ == "__main__":
                         six_month_summary = get_six_month_summary(
                             stock=stock,
                             analysis_date=analysis_date,
-                            experiment_metadata=experiment,
+                            model=experiment.model,
                             cache=monthly_summary_cache,
                         )
                         material_facts_report_str = format_six_month_report(six_month_summary)
@@ -262,7 +259,7 @@ if __name__ == "__main__":
                             stock=stock,
                             stock_price=daily_stock_price,
                             date=analysis_date,
-                            experiment_metadata=experiment,
+                            max_turns=experiment.max_turns,
                             indicators=indicators.to_string(),
                             material_facts_report=material_facts_report_str,
                         )

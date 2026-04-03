@@ -2,7 +2,7 @@ import asyncio
 
 from agents import Agent, ModelSettings, Runner, RunResult
 from datetime import datetime
-from src.experiments import ExperimentMetadata, Model, Intensity, StockInput
+from src.experiments import Intensity, Model, StockInput
 from openai.types.shared import Reasoning
 from src.tools import code_interpreter
 from src.financial_agents import get_agent
@@ -48,7 +48,7 @@ def analyse(
     price: str,
     analysis_date: datetime,
     indicators: str,
-    experiment_metadata: ExperimentMetadata,
+    max_turns: int,
     material_facts_report: str = "",
 ) -> RunResult:
     inp_data = TEMPLATE_INPUT.format(
@@ -60,7 +60,7 @@ def analyse(
         material_facts_report=material_facts_report,
     )
 
-    return asyncio.run(Runner.run(agent, input=inp_data, max_turns=experiment_metadata.max_turns))
+    return asyncio.run(Runner.run(agent, input=inp_data, max_turns=max_turns))
 
 
 def run(
@@ -68,7 +68,7 @@ def run(
     stock_price: float,
     date: str | datetime,
     indicators: str,
-    experiment_metadata: ExperimentMetadata,
+    max_turns: int,
     material_facts_report: str = "",
 ):
     agent = init_agent()
@@ -80,7 +80,7 @@ def run(
         price=str(stock_price),
         analysis_date=date,
         indicators=indicators,
-        experiment_metadata=experiment_metadata,
+        max_turns=max_turns,
         material_facts_report=material_facts_report,
     )
 

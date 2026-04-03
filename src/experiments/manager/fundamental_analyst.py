@@ -1,182 +1,69 @@
-import asyncio
-
-from agents import Agent, ModelSettings, Runner, RunResult
+import calendar
 from datetime import datetime, timedelta
-from src.db import get_stock_report, get_stock_composition
-from src.experiments import ExperimentMetadata, StockInput
-from openai.types.shared import Reasoning
-from src.tools import code_interpreter
-from src.financial_agents import get_agent
-from src.financial_agents.financial_analyst import (
-    FINANCIAL_ANALYST_INSTRUCTION,
-    IndicatorOutput,
-    Indicator,
-)
 
-TEMPLATE_INPUT = """Fazer análise fundamentalista da empresa {name} (CNPJ {cnpj}) em {date} com cotação a {price_str} reais.
-
-# Relatório DFP/ITR de {date}
-{report}
-
-# Composição de ativos de {date}
-{composition}
-
-# Relatório DFP/ITR do Trimestre Anterior ({previous_date})
-{previous_report}
-
-Feedback: {feedback}"""
+from src.experiments import StockInput
+from src.experiments.fundamental_analysis.workflow import get_db_fields, get_total_shares
+from src.financial_agents.financial_analyst import IndicatorOutput, compute_indicators
 
 
-def init_agent(experiment_metadata: ExperimentMetadata) -> Agent:
-    model_settings = ModelSettings(tool_choice="required")
-    if experiment_metadata.reasoning:
-        reasoning = Reasoning(effort=experiment_metadata.reasoning)
-        model_settings = ModelSettings(
-            reasoning=reasoning,
-            verbosity=experiment_metadata.verbosity,
-        )
-
-    return get_agent(
-        name="financial_analyst",
-        instructions=FINANCIAL_ANALYST_INSTRUCTION,
-        tools=[
-            code_interpreter,
-        ],
-        servers=[],
-        model=experiment_metadata.model,
-        model_settings=model_settings,
-        output_type=IndicatorOutput,
-    )
+# ---------------------------------------------------------------------------
+# Lightweight result wrapper — satisfies get_result() in src/experiments/utils.py
+# without invoking any LLM.
+# ---------------------------------------------------------------------------
 
 
-def analyse(
-    agent: Agent,
-    name: str,
-    cnpj: str,
-    price: str,
-    analysis_date: datetime,
-    report: str,
-    composition: str,
-    previous_report: str,
-    experiment_metadata: ExperimentMetadata,
-) -> RunResult:
-    feedback = "Compute todos os indicadores fundamentalistas disponíveis"
-
-    inp_data = TEMPLATE_INPUT.format(
-        name=name,
-        cnpj=cnpj,
-        date=analysis_date.strftime("%Y-%m-%d"),
-        previous_date=(analysis_date.replace(day=1) - timedelta(days=90)).strftime("%Y-%m"),
-        price_str=price,
-        report=report,
-        composition=composition,
-        previous_report=previous_report,
-        feedback=feedback,
-    )
-
-    return asyncio.run(Runner.run(agent, input=inp_data, max_turns=experiment_metadata.max_turns))
+class _Usage:
+    requests = 0
+    input_tokens = 0
+    output_tokens = 0
+    total_tokens = 0
 
 
-def guardrail(
-    agent: Agent,
-    name: str,
-    cnpj: str,
-    price: str,
-    analysis_date: datetime,
-    report: str,
-    composition: str,
-    previous_report: str,
-    result: RunResult,
-    experiment_metadata: ExperimentMetadata,
-) -> RunResult:
-    all_indicators = [str(i) for i in Indicator]
-    missing_indicators = [
-        str(i.indicator)
-        for i in result.final_output.indicators
-        if str(i.indicator) not in all_indicators or i.value == 0
-    ]
-    if len(missing_indicators) > 0:
-        # reflection
-        feedback = (
-            f"Compute SOMENTE os seguintes indicadores fundamentalistas: {missing_indicators}"
-        )
-        inp_data = TEMPLATE_INPUT.format(
-            name=name,
-            cnpj=cnpj,
-            price_str=price,
-            date=analysis_date.strftime("%Y-%m-%d"),
-            previous_date=(analysis_date.replace(day=1) - timedelta(days=90)).strftime("%Y-%m"),
-            report=report,
-            composition=composition,
-            previous_report=previous_report,
-            feedback=feedback,
-        )
-        reflected_result = asyncio.run(
-            Runner.run(agent, input=inp_data, max_turns=experiment_metadata.max_turns)
-        )
-        for i in reflected_result.final_output.indicators:
-            if str(i.indicator) in missing_indicators:
-                result.final_output.indicators = [
-                    i_
-                    for i_ in result.final_output.indicators
-                    if str(i.indicator) != str(i_.indicator)
-                ]
-                result.final_output.indicators.append(i)
+class _ContextWrapper:
+    usage = _Usage()
 
-        result.context_wrapper.usage.requests += reflected_result.context_wrapper.usage.requests
-        result.context_wrapper.usage.input_tokens += (
-            reflected_result.context_wrapper.usage.input_tokens
-        )
-        result.context_wrapper.usage.output_tokens += (
-            reflected_result.context_wrapper.usage.output_tokens
-        )
-        result.context_wrapper.usage.total_tokens += (
-            reflected_result.context_wrapper.usage.total_tokens
-        )
 
-    return result
+class WorkflowResult:
+    """Mimics the RunResult interface expected by get_result() and _save_results()."""
+
+    def __init__(self, output: IndicatorOutput) -> None:
+        self.context_wrapper = _ContextWrapper()
+        self.new_items: list = []
+        self.final_output = output
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 
 def run(
     stock: StockInput,
     stock_price: float,
     date: str | datetime,
-    experiment_metadata: ExperimentMetadata,
-):
-    agent = init_agent(experiment_metadata=experiment_metadata)
+) -> WorkflowResult:
+    """Compute fundamental indicators directly from the CVM database.
 
-    # Get last quarter reports of the stock (previous 3 months)
-    report = get_stock_report(cnpj=stock.cnpj, date=date)
-    composition = get_stock_composition(cnpj=stock.cnpj, date=date)
+    Replaces the LLM-based analysis with deterministic SQL queries, exactly as
+    done in src/experiments/fundamental_analysis/workflow.py.
 
-    # Get previous reports of the stock (previous 6 months)
-    previous_date = date.replace(day=1) - timedelta(days=90)
-    previous_report = get_stock_report(cnpj=stock.cnpj, date=previous_date)
-    composition = get_stock_composition(cnpj=stock.cnpj, date=previous_date)
+    The returned WorkflowResult exposes the same interface as RunResult so that
+    main_workflow.py can call get_result() and _save_results() without changes.
+    """
+    if isinstance(date, str):
+        date = datetime.fromisoformat(date)
 
-    result = analyse(
-        agent=agent,
-        name=stock.name,
-        cnpj=stock.cnpj,
-        price=str(stock_price),
-        analysis_date=date,
-        report=report,
-        composition=composition,
-        previous_report=previous_report,
-        experiment_metadata=experiment_metadata,
+    # prev_date = last calendar day of the quarter before date's quarter
+    prev_month_end = date.replace(day=1) - timedelta(days=1)
+    prev_date = prev_month_end.replace(
+        day=calendar.monthrange(prev_month_end.year, prev_month_end.month)[1]
     )
-    if experiment_metadata.reflection:
-        result = guardrail(
-            agent=agent,
-            name=stock.name,
-            cnpj=stock.cnpj,
-            price=str(stock_price),
-            analysis_date=date,
-            report=report,
-            composition=composition,
-            previous_report=previous_report,
-            result=result,
-            experiment_metadata=experiment_metadata,
-        )
 
-    return result
+    date_str = date.strftime("%Y-%m-%d")
+    prev_date_str = prev_date.strftime("%Y-%m-%d")
+
+    db_fields = get_db_fields(cnpj=stock.cnpj, date=date_str, prev_date=prev_date_str)
+    total_shares = get_total_shares(cnpj=stock.cnpj, date=date_str)
+    output = compute_indicators(db_fields=db_fields, price=stock_price, total_shares=total_shares)
+
+    return WorkflowResult(output=output)

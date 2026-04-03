@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from src.experiments import ExperimentMetadata, Intensity, Model
 from src.experiments.fundamental_analysis.agent import run as run_agent
 from src.experiments.fundamental_analysis.workflow import run as run_workflow
-from src.financial_agents.financial_analyst import IndicatorOutput
 from src.settings import WRITE_FOLDER
 
 load_dotenv()
@@ -18,7 +17,6 @@ while True:
             model=Model.GPT_4_1_MINI,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reflection=False,
         )
         print("Agent...")
@@ -31,7 +29,6 @@ while True:
             model=Model.GPT_4_1_MINI,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reflection=True,
         )
         print("Agent...")
@@ -44,7 +41,6 @@ while True:
             model=Model.GPT_4_1_NANO,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reflection=False,
         )
         print("Agent...")
@@ -57,7 +53,6 @@ while True:
             model=Model.GPT_4_1_NANO,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reflection=True,
         )
         print("Agent...")
@@ -70,7 +65,6 @@ while True:
             model=Model.GPT_5_MINI,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
             reflection=False,
@@ -85,7 +79,6 @@ while True:
             model=Model.GPT_5_MINI,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
             reflection=True,
@@ -100,7 +93,6 @@ while True:
             model=Model.GPT_5_NANO,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
             reflection=False,
@@ -115,7 +107,6 @@ while True:
             model=Model.GPT_5_NANO,
             write_folder=WRITE_FOLDER,
             max_turns=15,
-            structured_output=IndicatorOutput.model_json_schema(),
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
             reflection=True,
