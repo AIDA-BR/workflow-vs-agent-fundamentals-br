@@ -90,7 +90,18 @@ Você receberá uma planilha contendo informações sobre uma empresa, organizad
 
 # Observações
 
-- Utilize o interpretador Python como calculadora sempre que necessário."""
+- Utilize o interpretador Python como calculadora sempre que necessário.
+
+# Fatos Relevantes
+
+Se fornecido, você também receberá um relatório de fatos relevantes e comunicados ao mercado
+dos últimos 6 meses da empresa. Utilize essas informações como contexto qualitativo para:
+
+1. Identificar eventos que possam explicar variações nos indicadores fundamentalistas.
+2. Avaliar riscos não refletidos diretamente nos números (regulatórios, operacionais, de governança).
+3. Incorporar perspectivas de crescimento ou deterioração decorrentes de eventos recentes.
+
+O relatório de fatos relevantes NÃO substitui a análise quantitativa — ele a complementa."""
 
 MANAGER_DESCRIPTION = "A financial manager agent for the Brazilian stock market"
 
