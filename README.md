@@ -1,8 +1,11 @@
 # Workflow vs Agent — Fundamental Analysis of Brazilian Stocks
 
-Experiment comparing **workflow** and **autonomous agent** approaches for fundamental analysis of Brazilian stocks using the OpenAI API.
+This branch contains the code used to reproduce the experiments reported in the paper:
 
-> **Looking for the paper results?** The code used to reproduce the experiments reported in the paper *"A Financial Agent for Fundamental Analysis: An Empirical Investigation in the Brazilian Stock Market"*, accepted at the **ICLR 2026 Workshop on Advances in Financial AI**, is available on the [`paper/iclr-2026-workshop`](../../tree/paper/iclr-2026-workshop) branch.
+> **"A Financial Agent for Fundamental Analysis: An Empirical Investigation in the Brazilian Stock Market"**
+> Accepted at the **ICLR 2026 Workshop on Advances in Financial AI**
+
+Experiment comparing **workflow** and **autonomous agent** approaches for fundamental analysis of Brazilian stocks using the OpenAI API.
 
 ## Project structure
 
