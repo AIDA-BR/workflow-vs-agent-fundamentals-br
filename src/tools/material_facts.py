@@ -1,4 +1,6 @@
+import base64
 import calendar
+import json
 import os
 import re
 import urllib3
@@ -12,6 +14,14 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 DEFAULT_OUTPUT_FOLDER = "data/material_facts"
 
+_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/91.0.4472.124 Safari/537.36"
+    )
+}
+
 
 def _extract_noticia_id(url: str) -> str | None:
     match = re.search(r"idNoticia=(\d+)", url)
@@ -19,29 +29,64 @@ def _extract_noticia_id(url: str) -> str | None:
 
 
 def _get_pdf_url_from_detail_page(detail_url: str) -> str | None:
-    """Fetch the B3 news detail page and return the CVM PDF link."""
+    """Fetch the B3 news detail page and return the CVM PDF link.
+
+    The page is server-side rendered: the content sits in <pre id="conteudoDetalhe">
+    and URLs end with ``?flnk`` or ``&flnk`` (HTML-encoded as ``&amp;flnk``).
+    JavaScript would normally strip that suffix and create a visible link, so we
+    replicate that logic here without needing a browser.
+    """
     try:
-        r = requests.get(detail_url, verify=False, timeout=30)
+        r = requests.get(detail_url, headers=_HEADERS, verify=False, timeout=30)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
-        for a in soup.find_all("a", href=True):
-            text = a.get_text(strip=True)
-            if "Clique aqui" in text or "documento na íntegra" in text:
-                href = a["href"]
-                return href if href.startswith("http") else f"https:{href}"
+        pre = soup.find("pre", id="conteudoDetalhe")
+        if pre is None:
+            return None
+        # get_text() decodes HTML entities, so &amp;flnk → &flnk
+        text = pre.get_text()
+        match = re.search(r"(https?://\S+?)(?:\?flnk|&flnk)", text)
+        if match:
+            return match.group(1)
         return None
     except Exception:
         return None
 
 
-def _download_pdf(pdf_url: str, pdf_path: str) -> bool:
-    """Download a PDF from CVM and save it to pdf_path. Returns True on success."""
+def _extract_cvm_id(cvm_url: str) -> str | None:
+    match = re.search(r"[?&]ID=(\d+)", cvm_url, re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+def _download_pdf(cvm_url: str, pdf_path: str) -> bool:
+    """Download a PDF from CVM via the ExibirPDF API and save to pdf_path.
+
+    CVM does not serve the file at the URL directly — the page POSTs to
+    ``frmExibirArquivoIPEExterno.aspx/ExibirPDF`` and receives the PDF as a
+    base64-encoded JSON response.  We replicate that call here.
+    """
+    cvm_id = _extract_cvm_id(cvm_url)
+    if cvm_id is None:
+        return False
     try:
-        r = requests.get(pdf_url, verify=False, timeout=60, stream=True)
+        payload = json.dumps(
+            {"codigoInstituicao": "2", "numeroProtocolo": cvm_id, "token": "", "versaoCaptcha": ""}
+        )
+        api_url = "https://www.rad.cvm.gov.br/ENET/frmExibirArquivoIPEExterno.aspx/ExibirPDF"
+        r = requests.post(
+            api_url,
+            data=payload,
+            headers={**_HEADERS, "Content-Type": "application/json; charset=utf-8"},
+            verify=False,
+            timeout=60,
+        )
         r.raise_for_status()
+        d = r.json().get("d", "")
+        if not d or d.startswith(":ERRO:") or d == "V2":
+            return False
+        pdf_bytes = base64.b64decode(d)
         with open(pdf_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+            f.write(pdf_bytes)
         return True
     except Exception:
         return False
@@ -127,3 +172,7 @@ def fetch_material_facts(
         )
 
     return results
+
+
+if __name__ == "__main__":
+    fetch_material_facts(ticker="PETR", year=2026, month=3, output_folder="facts/")
