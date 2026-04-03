@@ -1,100 +1,102 @@
-# Workflow vs Agent — Análise Fundamentalista de Ações Brasileiras
+# Workflow vs Agent — Fundamental Analysis of Brazilian Stocks
 
-Experimento comparando abordagens de **workflow** e **agente autônomo** para análise fundamentalista de ações do mercado brasileiro, usando a API da OpenAI.
+Experiment comparing **workflow** and **autonomous agent** approaches for fundamental analysis of Brazilian stocks using the OpenAI API.
 
-## Estrutura do projeto
+> **Looking for the paper results?** The code used to reproduce the experiments reported in the paper *"A Financial Agent for Fundamental Analysis: An Empirical Investigation in the Brazilian Stock Market"*, accepted at the **ICLR 2026 Workshop on Advances in Financial AI**, is available on the [`paper/iclr-2026-workshop`](../../tree/paper/iclr-2026-workshop) branch.
+
+## Project structure
 
 ```
 ./
-├── main.py                         # Experimento: análise fundamentalista (agent vs workflow)
-├── main_workflow.py                # Experimento: casa de investimento (analista + gestor)
-├── dev.env                         # Variáveis de ambiente (copiar para .env)
+├── main.py                         # Experiment: fundamental analysis (agent vs workflow)
+├── main_workflow.py                # Experiment: investment house (analyst + manager)
+├── dev.env                         # Environment variables (copy to .env)
 ├── pyproject.toml
 ├── scripts/
-│   ├── evaluation_final.ipynb      # Notebook com os resultados reportados
+│   ├── evaluation_final.ipynb      # Notebook with the reported results
 │   ├── extract_fundamental_analysis.py
 │   ├── parse_cvm.ipynb
 │   └── parse_prices.ipynb
 └── src/
-    ├── settings.py                 # Centraliza caminhos lidos de variáveis de ambiente
-    ├── db/                         # Consultas SQL (CVM DFP/ITR e preços)
-    ├── tools/                      # Ferramentas OpenAI Agents (function tools)
-    ├── financial_agents/           # Definições de agentes (analista, gestor)
+    ├── settings.py                 # Centralizes paths read from environment variables
+    ├── db/                         # SQL queries (CVM DFP/ITR and prices)
+    ├── tools/                      # OpenAI Agents tools (function tools)
+    ├── financial_agents/           # Agent definitions (analyst, manager)
     └── experiments/
-        ├── fundamental_analysis/   # Experimento agent vs workflow (main.py)
+        ├── fundamental_analysis/   # Agent vs workflow experiment (main.py)
         │   ├── agent.py
         │   ├── workflow.py
-        │   └── config.py           # Lista de ações (STOCKS)
-        └── manager/                # Experimento casa de investimento (main_workflow.py)
+        │   └── config.py           # Stock list (STOCKS)
+        └── manager/                # Investment house experiment (main_workflow.py)
             ├── fundamental_analyst.py
             ├── manager.py
             └── config.py
 ```
 
-## Configuração
+## Setup
 
-### 1. Instalar dependências
+### 1. Install dependencies
 
-Requer [uv](https://docs.astral.sh/uv/getting-started/installation/).
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
 uv sync
 ```
 
-### 2. Preparar base de dados
+### 2. Prepare the databases
 
-Descompacte as bases de dados na pasta `data/`:
+Extract the databases into the `data/` folder:
 
 ```
 data/
-├── cvm.db          # Formulários DFP/ITR da CVM
-├── prices.db       # Histórico de preços (COTAHIST)
-└── gold.csv        # Preços de referência para os experimentos
+├── cvm.db          # CVM DFP/ITR forms
+├── prices.db       # Price history (COTAHIST)
+└── gold.csv        # Reference prices for the experiments
 ```
 
-### 3. Configurar variáveis de ambiente
+### 3. Configure environment variables
 
-Copie `dev.env` para `.env` e atualize os valores:
+Copy `dev.env` to `.env` and update the values:
 
 ```bash
 cp dev.env .env
 ```
 
-Variáveis obrigatórias em `.env`:
+Required variables in `.env`:
 
-| Variável | Descrição |
+| Variable | Description |
 |---|---|
-| `OPENAI_API_KEY` | Chave da API OpenAI |
-| `DB_PATH` | Caminho para `cvm.db` |
-| `PRICE_DB_PATH` | Caminho para `prices.db` |
-| `PRICE_FILE` | Caminho para o CSV de preços de referência |
-| `WRITE_FOLDER` | Pasta de saída dos resultados (padrão: `results`) |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `DB_PATH` | Path to `cvm.db` |
+| `PRICE_DB_PATH` | Path to `prices.db` |
+| `PRICE_FILE` | Path to the reference prices CSV |
+| `WRITE_FOLDER` | Output folder for results (default: `results`) |
 
-## Execução
+## Running the experiments
 
-### Experimento: análise fundamentalista (agent vs workflow)
+### Experiment: fundamental analysis (agent vs workflow)
 
-Compara as abordagens agent e workflow na tarefa de computar indicadores fundamentalistas para uma lista de ações.
+Compares the agent and workflow approaches on the task of computing fundamental indicators for a list of stocks.
 
 ```bash
 uv run main.py
 ```
 
-Resultados salvos em `results/<model>/agent_<reflection>/` e `results/<model>/workflow_<reflection>/`.
+Results are saved to `results/<model>/agent_<reflection>/` and `results/<model>/workflow_<reflection>/`.
 
-### Experimento: casa de investimento
+### Experiment: investment house
 
-Simula uma casa de investimento com dois agentes em sequência: um analista fundamentalista e um gestor de carteira, iterando mensalmente sobre 2024–2025.
+Simulates an investment house with two sequential agents: a fundamental analyst and a portfolio manager, iterating monthly over 2024–2025.
 
 ```bash
 uv run main_workflow.py
 ```
 
-Resultados salvos em `results/<stock_id>/`.
+Results are saved to `results/<stock_id>/`.
 
-### Avaliação
+### Evaluation
 
-Abra o notebook com os resultados reportados no paper:
+Open the notebook with the results reported in the paper:
 
 ```bash
 uv run jupyter lab scripts/evaluation_final.ipynb
