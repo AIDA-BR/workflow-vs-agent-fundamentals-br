@@ -30,6 +30,12 @@ This is different from the `fetch_material_facts` function in
 `src/tools/material_facts.py`, which only returns items whose title contains
 "Fato Relevante".
 
+> **Historical data beyond 365 days**: B3's Plantão de Notícias API only covers
+> the last ~365 days. For older documents, use `fetch_material_facts_from_ipe`
+> (also in `src/tools/material_facts.py`), which pulls data from the
+> [CVM IPE open-data portal](https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/)
+> and covers disclosures back to 2003.
+
 ---
 
 ## Setup
@@ -138,6 +144,8 @@ Each item in the returned list is a `dict` with these keys:
 
 ## How it works
 
+### `fetch_news` / `fetch_material_facts` — B3 Plantão de Notícias
+
 ```
 B3 Plantão de Notícias API
         │
@@ -170,3 +178,52 @@ Cache to disk  (.pdf + .md)
    structure as much as possible.
 6. **Cache**: the `.pdf` and `.md` files are written once and reused on
    subsequent runs.
+
+**Limitation**: covers only the last ~365 days.
+
+---
+
+### `fetch_material_facts_from_ipe` — CVM IPE Open Data
+
+For historical data beyond the 365-day B3 window, `fetch_material_facts_from_ipe`
+(in `src/tools/material_facts.py`) uses the CVM IPE open-data portal.
+
+```
+CVM IPE yearly ZIP  (ipe_cia_aberta_{year}.zip)
+        │
+        │  cached in data/ipe_cache/
+        ▼
+Filter rows by CNPJ + month + category "Fato Relevante"
+        │
+        ▼
+CVM ENET document page  ──►  PDF download
+        │
+        ▼
+docling DocumentConverter  ──►  Markdown text
+        │
+        ▼
+Cache to disk  (data/material_facts/<ticker>/<protocolo>.md)
+```
+
+1. **Download ZIP**: the full IPE index for the requested year is downloaded once
+   and cached at `data/ipe_cache/ipe_cia_aberta_{year}.zip`.
+2. **Filter**: rows are matched by normalised CNPJ, target month prefix, and
+   `Categoria == "Fato Relevante"`.
+3. **Fetch PDF**: each matching row's `Link_Download` is used to derive the ENET
+   document URL, from which the PDF is downloaded.
+4. **Convert & cache**: same docling pipeline as above; `.md` files are reused
+   on subsequent runs.
+
+#### Fallback chain used by the investment-house pipeline
+
+`src/experiments/manager/material_facts_report.py` tries sources in order:
+
+```
+fetch_material_facts_from_ipe  (CVM IPE — full history)
+        │  no results?
+        ▼
+fetch_material_facts            (B3 Plantão — last ~365 days)
+        │  no results?
+        ▼
+"Sem comunicados divulgados neste mês."
+```
