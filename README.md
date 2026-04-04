@@ -193,7 +193,7 @@ CVM IPE yearly ZIP  (ipe_cia_aberta_{year}.zip)
         │
         │  cached in data/ipe_cache/
         ▼
-Filter rows by CNPJ + month + category "Fato Relevante"
+Filter rows by CNPJ + month
         │
         ▼
 CVM ENET document page  ──►  PDF download
@@ -207,8 +207,8 @@ Cache to disk  (data/material_facts/<ticker>/<protocolo>.md)
 
 1. **Download ZIP**: the full IPE index for the requested year is downloaded once
    and cached at `data/ipe_cache/ipe_cia_aberta_{year}.zip`.
-2. **Filter**: rows are matched by normalised CNPJ, target month prefix, and
-   `Categoria == "Fato Relevante"`.
+2. **Filter**: rows are matched by normalised CNPJ and target month prefix — all
+   document categories are included.
 3. **Fetch PDF**: each matching row's `Link_Download` is used to derive the ENET
    document URL, from which the PDF is downloaded.
 4. **Convert & cache**: same docling pipeline as above; `.md` files are reused

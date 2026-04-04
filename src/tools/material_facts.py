@@ -35,7 +35,7 @@ def _normalize_cnpj(cnpj: str) -> str:
 
 
 def _fetch_ipe_rows_for_cnpj(cnpj: str, year: int) -> list[dict]:
-    """Download (and cache) the CVM IPE yearly ZIP and return all 'Fato Relevante' rows for cnpj."""
+    """Download (and cache) the CVM IPE yearly ZIP and return all rows for cnpj."""
     os.makedirs(_IPE_CACHE_FOLDER, exist_ok=True)
     zip_path = os.path.join(_IPE_CACHE_FOLDER, f"ipe_cia_aberta_{year}.zip")
 
@@ -63,7 +63,6 @@ def _fetch_ipe_rows_for_cnpj(cnpj: str, year: int) -> list[dict]:
                     row
                     for row in reader
                     if _normalize_cnpj(row.get("CNPJ_Companhia", "")) == cnpj_norm
-                    and row.get("Categoria", "") == "Fato Relevante"
                 ]
     except Exception:
         return []
@@ -77,7 +76,7 @@ def fetch_material_facts_from_ipe(
     output_folder: str | None = None,
 ) -> list[dict]:
     """
-    Fetch "Fato Relevante" announcements for a given company from the CVM IPE open-data portal.
+    Fetch all announcements for a given company from the CVM IPE open-data portal.
 
     Covers any date range (data available back to 2003), unlike the B3 plantão de notícias
     which is limited to ~365 days. Downloaded ZIPs are cached in data/ipe_cache/.
