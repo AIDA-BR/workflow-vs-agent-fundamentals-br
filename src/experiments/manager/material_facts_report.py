@@ -11,7 +11,7 @@ from src.financial_agents.material_facts_summarizer import (
     MonthlySummary,
     SixMonthSummary,
 )
-from src.tools.material_facts import fetch_material_facts
+from src.tools.material_facts import fetch_material_facts, fetch_material_facts_from_ipe
 
 
 def get_monthly_summary(
@@ -25,7 +25,11 @@ def get_monthly_summary(
     if cache_key in cache:
         return cache[cache_key]
 
-    news = fetch_material_facts(ticker=stock.stock_id, year=year, month=month)
+    news = fetch_material_facts_from_ipe(
+        cnpj=stock.cnpj, ticker=stock.stock_id, year=year, month=month
+    )
+    if not news:
+        news = fetch_material_facts(ticker=stock.stock_id, year=year, month=month)
 
     if not news:
         result = MonthlySummary(
