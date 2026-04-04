@@ -22,6 +22,10 @@ class ExperimentMetadata(BaseModel):
     write_folder: str = Field(description="Folder to write results")
     reasoning: Intensity | None = Field(default=None, description="Reasoning intensity")
     verbosity: Intensity | None = Field(default=None, description="Verbosity intensity")
+    use_fundamental_analysis: bool = Field(
+        default=True, description="Enable fundamental analysis module"
+    )
+    use_material_facts: bool = Field(default=True, description="Enable material facts module")
 
 
 class StockInput(BaseModel):

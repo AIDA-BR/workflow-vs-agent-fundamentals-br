@@ -24,6 +24,16 @@ from src.settings import WRITE_FOLDER
 load_dotenv()
 
 
+def _year_months(start: tuple[int, int], end: tuple[int, int]):
+    """Yield (year, month) pairs from start to end, inclusive."""
+    y, m = start
+    while (y, m) <= end:
+        yield y, m
+        m += 1
+        if m > 12:
+            m, y = 1, y + 1
+
+
 def _get_first_workday(year, month):
     date = datetime(year, month, 1)
     while date.weekday() > 4 or not dus.dia_util(date):
@@ -173,32 +183,33 @@ if __name__ == "__main__":
     while True:
         is_error = False
         try:
-            for stock in STOCKS:
-                for year in [2024, 2025]:
-                    for month in range(1, 13):
-                        analysis_date = _get_first_workday(year, month)
-                        print(f"Analisando {stock.stock_id} em {analysis_date}")
+            for stock in STOCKS[2:]:
+                for year, month in _year_months(start=(2024, 1), end=(2025, 12)):
+                    analysis_date = _get_first_workday(year, month)
+                    print(f"Analisando {stock.stock_id} em {analysis_date}")
 
-                        if os.path.exists(
-                            f"{experiment.write_folder}/{stock.stock_id}/{analysis_date.strftime('%Y-%m-%d')}_analyst_0.json"
-                        ):
-                            continue
+                    if os.path.exists(
+                        f"{experiment.write_folder}/{stock.stock_id}/{analysis_date.strftime('%Y-%m-%d')}_analyst_0.json"
+                    ):
+                        continue
 
-                        start_time = time.time()
+                    start_time = time.time()
 
-                        # Get stock price in the day
-                        daily_stock_info = get_stock_daily_info(
-                            stock_id=stock.stock_id,
-                            date=analysis_date,
-                            response_format=ResponseFormat.DICT,
-                        )
-                        if len(daily_stock_info) == 0:
-                            continue
-                        daily_stock_price = float(daily_stock_info[0]["PRECO_ULTIMO_NEGOCIO"])
+                    # Get stock price in the day
+                    daily_stock_info = get_stock_daily_info(
+                        stock_id=stock.stock_id,
+                        date=analysis_date,
+                        response_format=ResponseFormat.DICT,
+                    )
+                    if len(daily_stock_info) == 0:
+                        continue
+                    daily_stock_price = float(daily_stock_info[0]["PRECO_ULTIMO_NEGOCIO"])
 
-                        # Get last quarter reports date (previous 3 months)
-                        report_date = get_last_stock_report_date(analysis_date)
+                    # Get last quarter reports date (previous 3 months)
+                    report_date = get_last_stock_report_date(analysis_date)
 
+                    # --- Fundamental analysis module ---
+                    if experiment.use_fundamental_analysis:
                         result = fundamental_analyst.run(
                             stock=stock,
                             stock_price=daily_stock_price,
@@ -217,36 +228,45 @@ if __name__ == "__main__":
                             experiment_id=0,
                         )
 
-                        # Get fundamental indicators
                         fundamental_indicators = _parse_fundamental_analyst_output(
                             result, end_time - start_time
                         )
-                        # Get price info
-                        price_info = _get_daily_price_info(
-                            stock_id=stock.stock_id,
-                            daily_stock_info=daily_stock_info[0],
-                            report_date=report_date,
-                        )
-                        # Last manager decision
-                        last_manager_decision = _get_last_manager_decision(
-                            manager_decisions, stock.stock_id
-                        )
+                    else:
+                        end_time = time.time()
+                        fundamental_indicators = {}
 
-                        fundamental_analyses.append(
-                            {
-                                **fundamental_indicators,
-                                **price_info,
-                                **last_manager_decision,
-                            }
-                        )
+                    # Get price info
+                    price_info = _get_daily_price_info(
+                        stock_id=stock.stock_id,
+                        daily_stock_info=daily_stock_info[0],
+                        report_date=report_date,
+                    )
+                    # Last manager decision
+                    last_manager_decision = _get_last_manager_decision(
+                        manager_decisions, stock.stock_id
+                    )
 
+                    fundamental_analyses.append(
+                        {
+                            **fundamental_indicators,
+                            **price_info,
+                            **last_manager_decision,
+                        }
+                    )
+
+                    indicators_str = ""
+                    if experiment.use_fundamental_analysis:
                         indicators = pd.DataFrame(fundamental_analyses)
                         indicators = (
                             indicators[indicators["ACAO"] == stock.stock_id]
                             .sort_values("DATA_DO_PREGAO", ascending=True)
                             .tail(12)
                         )
+                        indicators_str = indicators.to_string()
 
+                    # --- Material facts module ---
+                    material_facts_report_str = ""
+                    if experiment.use_material_facts:
                         six_month_summary = get_six_month_summary(
                             stock=stock,
                             analysis_date=analysis_date,
@@ -255,47 +275,56 @@ if __name__ == "__main__":
                         )
                         material_facts_report_str = format_six_month_report(six_month_summary)
 
-                        decision = financial_manager.run(
-                            stock=stock,
-                            stock_price=daily_stock_price,
-                            date=analysis_date,
-                            max_turns=experiment.max_turns,
-                            indicators=indicators.to_string(),
-                            material_facts_report=material_facts_report_str,
+                        stock_folder = f"{experiment.write_folder}/{stock.stock_id}"
+                        os.makedirs(stock_folder, exist_ok=True)
+                        report_file = (
+                            f"{stock_folder}/{analysis_date.strftime('%Y-%m-%d')}"
+                            "_material_facts_0.txt"
                         )
+                        with open(report_file, "w") as f:
+                            f.write(material_facts_report_str)
 
-                        end_time = time.time()
+                    decision = financial_manager.run(
+                        stock=stock,
+                        stock_price=daily_stock_price,
+                        date=analysis_date,
+                        max_turns=experiment.max_turns,
+                        indicators=indicators_str,
+                        material_facts_report=material_facts_report_str,
+                    )
 
-                        _save_results(
-                            write_folder=experiment.write_folder,
-                            stock_id=stock.stock_id,
-                            analysis_date=analysis_date.strftime("%Y-%m-%d"),
-                            agent_role="manager",
-                            result=decision,
-                            elapsed_time=end_time - start_time,
-                            experiment_id=0,
-                        )
+                    end_time = time.time()
 
-                        decision = _parse_financial_manager_output(
-                            decision,
-                            analysis_date,
-                            end_time - start_time,
-                            stock.stock_id,
-                        )
-                        manager_decisions.append(decision)
+                    _save_results(
+                        write_folder=experiment.write_folder,
+                        stock_id=stock.stock_id,
+                        analysis_date=analysis_date.strftime("%Y-%m-%d"),
+                        agent_role="manager",
+                        result=decision,
+                        elapsed_time=end_time - start_time,
+                        experiment_id=0,
+                    )
 
-                        with open(f"{experiment.write_folder}/results_sample.json", "w") as f:
-                            json.dump(fundamental_analyses, f, indent=4)
+                    decision = _parse_financial_manager_output(
+                        decision,
+                        analysis_date,
+                        end_time - start_time,
+                        stock.stock_id,
+                    )
+                    manager_decisions.append(decision)
 
-                        with open(f"{experiment.write_folder}/decisions_sample.json", "w") as f:
-                            json.dump(manager_decisions, f, indent=4)
+                    with open(f"{experiment.write_folder}/results_sample.json", "w") as f:
+                        json.dump(fundamental_analyses, f, indent=4)
 
-                        serializable_cache = {
-                            f"{k[0]}|{k[1]}|{k[2]}": v.model_dump()
-                            for k, v in monthly_summary_cache.items()
-                        }
-                        with open(cache_path, "w") as f:
-                            json.dump(serializable_cache, f, indent=4)
+                    with open(f"{experiment.write_folder}/decisions_sample.json", "w") as f:
+                        json.dump(manager_decisions, f, indent=4)
+
+                    serializable_cache = {
+                        f"{k[0]}|{k[1]}|{k[2]}": v.model_dump()
+                        for k, v in monthly_summary_cache.items()
+                    }
+                    with open(cache_path, "w") as f:
+                        json.dump(serializable_cache, f, indent=4)
         except Exception:
             print("Error, retrying in 1 minute...")
             time.sleep(60)
