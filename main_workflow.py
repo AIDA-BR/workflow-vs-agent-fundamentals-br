@@ -183,7 +183,7 @@ if __name__ == "__main__":
     while True:
         is_error = False
         try:
-            for stock in STOCKS[2:]:
+            for stock in STOCKS:
                 for year, month in _year_months(start=(2024, 1), end=(2025, 12)):
                     analysis_date = _get_first_workday(year, month)
                     print(f"Analisando {stock.stock_id} em {analysis_date}")
