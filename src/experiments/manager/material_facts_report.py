@@ -1,6 +1,7 @@
 import asyncio
 
 from agents import ModelSettings, Runner
+from src.experiments.providers import get_run_config
 from datetime import datetime, timedelta
 
 from src.experiments import Model, StockInput
@@ -62,7 +63,8 @@ def get_monthly_summary(
         output_type=MonthlySummary,
     )
 
-    run_result = asyncio.run(Runner.run(agent, input=inp, max_turns=5))
+    run_config = get_run_config(model)
+    run_result = asyncio.run(Runner.run(agent, input=inp, max_turns=5, run_config=run_config))
     summary: MonthlySummary = run_result.final_output
     cache[cache_key] = summary
     return summary
@@ -105,7 +107,8 @@ def get_six_month_summary(
         output_type=SixMonthSummary,
     )
 
-    run_result = asyncio.run(Runner.run(agent, input=inp, max_turns=5))
+    run_config = get_run_config(model)
+    run_result = asyncio.run(Runner.run(agent, input=inp, max_turns=5, run_config=run_config))
     return run_result.final_output
 
 

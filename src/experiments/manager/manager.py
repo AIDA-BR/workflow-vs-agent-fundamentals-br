@@ -1,9 +1,9 @@
 import asyncio
 
-from agents import Agent, ModelSettings, Runner, RunResult
+from agents import Agent, ModelSettings, RunConfig, Runner, RunResult
 from datetime import datetime
-from src.experiments import Intensity, Model, StockInput
-from openai.types.shared import Reasoning
+from src.experiments import Intensity, Model, StockInput, is_maritaca_model
+from src.experiments.providers import get_run_config
 from src.tools import code_interpreter
 from src.financial_agents import get_agent
 from src.financial_agents.financial_manager import (
@@ -21,12 +21,16 @@ Cotação: {price_str}
 """
 
 
-def init_agent() -> Agent:
-    reasoning = Reasoning(effort=Intensity.HIGH)
-    model_settings = ModelSettings(
-        reasoning=reasoning,
-        verbosity=Intensity.MEDIUM,
-    )
+def init_agent(model: Model = Model.GPT_5_MINI) -> Agent:
+    if is_maritaca_model(model):
+        model_settings = ModelSettings()
+    else:
+        from openai.types.shared import Reasoning
+
+        model_settings = ModelSettings(
+            reasoning=Reasoning(effort=Intensity.HIGH),
+            verbosity=Intensity.MEDIUM,
+        )
 
     return get_agent(
         name="financial_manager",
@@ -35,7 +39,7 @@ def init_agent() -> Agent:
             code_interpreter,
         ],
         servers=[],
-        model=Model.GPT_5_MINI,
+        model=model,
         model_settings=model_settings,
         output_type=FinanceOutput,
     )
@@ -50,6 +54,7 @@ def analyse(
     indicators: str,
     max_turns: int,
     material_facts_report: str = "",
+    run_config: RunConfig | None = None,
 ) -> RunResult:
     inp_data = TEMPLATE_INPUT.format(
         name=name,
@@ -60,7 +65,9 @@ def analyse(
         material_facts_report=material_facts_report,
     )
 
-    return asyncio.run(Runner.run(agent, input=inp_data, max_turns=max_turns))
+    return asyncio.run(
+        Runner.run(agent, input=inp_data, max_turns=max_turns, run_config=run_config)
+    )
 
 
 def run(
@@ -70,8 +77,10 @@ def run(
     indicators: str,
     max_turns: int,
     material_facts_report: str = "",
+    model: Model = Model.GPT_5_MINI,
 ):
-    agent = init_agent()
+    run_config = get_run_config(model)
+    agent = init_agent(model)
 
     result = analyse(
         agent=agent,
@@ -82,6 +91,7 @@ def run(
         indicators=indicators,
         max_turns=max_turns,
         material_facts_report=material_facts_report,
+        run_config=run_config,
     )
 
     return result

@@ -7,6 +7,11 @@ class Model(StrEnum):
     GPT_5_MINI = "gpt-5-mini"
     GPT_4_1_NANO = "gpt-4.1-nano"
     GPT_5_NANO = "gpt-5-nano"
+    SABIAZINHO_4 = "sabiazinho-4"
+
+
+def is_maritaca_model(model: Model) -> bool:
+    return str(model).startswith("sabia")
 
 
 class Intensity(StrEnum):
