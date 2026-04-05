@@ -79,29 +79,57 @@ def _db_account(
     return float(rows[0].get("ACCOUNT_VALUE") or 0)
 
 
-def _db_account_with_fallback(
-    cnpj: str,
-    primary: str,
-    fallback: str,
-    date: str,
-    exerc_order: str = "ÚLTIMO",
-    period: str = "any",
-) -> float:
-    """Returns primary account value; falls back to fallback account when primary is 0.0.
+def _db_account_name(cnpj: str, account: str, date: str, exerc_order: str = "ÚLTIMO") -> str:
+    """Returns the ACCOUNT_NAME for a given account, or '' if not found."""
+    query = f"""
+    SELECT ACCOUNT_NAME FROM DFP_ITR_CVM
+    WHERE CNPJ = '{cnpj}' AND REPORT_DATE = '{date}'
+      AND ACCOUNT_NUMBER = '{account}' AND EXERC_ORDER = '{exerc_order}'
+    ORDER BY CAST(VERSION AS INTEGER) DESC LIMIT 1;"""
+    result = run_sql_query(
+        {"sql_query": query}, db_path=DB_PATH, response_format=ResponseFormat.DICT
+    )
+    rows = result.get("report", [])
+    if not rows or not isinstance(rows, list):
+        return ""
+    return str(rows[0].get("ACCOUNT_NAME", ""))
 
-    Used for 3.11.01 (LL controladora) → 3.11 (LL consolidado) for companies in judicial
-    recovery that do not publish the controller/minority split.
+
+def _get_patrimonio_liquido(cnpj: str, date: str) -> float:
+    """Returns Patrimônio Líquido (excluding minority interests) for any company structure.
+
+    Standard companies report PL at account 2.03 (minorities at 2.03.09).
+    Banks and financial institutions report PL at a higher account (e.g. 2.07),
+    with minorities labelled 'Não Controladores' in a subaccount.
     """
-    value = _db_account(cnpj, primary, date, exerc_order=exerc_order, period=period)
-    if value != 0.0:
-        return value
-    return _db_account(cnpj, fallback, date, exerc_order=exerc_order, period=period)
+    # Fast path: standard structure (2.03 = PL)
+    pl_name = _db_account_name(cnpj, "2.03", date)
+    if "patrimônio" in pl_name.lower():
+        return _db_account(cnpj, "2.03", date) - _db_account(cnpj, "2.03.09", date)
+
+    # Non-standard: search 2.04–2.09 for the PL account
+    for suffix in ("04", "05", "06", "07", "08", "09"):
+        acc = f"2.{suffix}"
+        name = _db_account_name(cnpj, acc, date)
+        if "patrimônio" not in name.lower():
+            continue
+        pl_total = _db_account(cnpj, acc, date)
+        # Find the minority-interest subaccount (name contains "não controlador")
+        minorities = 0.0
+        for sub in ("01", "02", "03", "04", "05", "06", "07", "08", "09"):
+            sub_acc = f"{acc}.{sub}"
+            sub_name = _db_account_name(cnpj, sub_acc, date)
+            if "não controlador" in sub_name.lower():
+                minorities = _db_account(cnpj, sub_acc, date)
+                break
+        return pl_total - minorities
+
+    # Absolute fallback (covers companies with no minorities disclosure)
+    return _db_account(cnpj, "2.03", date)
 
 
 def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
     """Fetches all 15 base financial fields directly from the CVM database (DF Consolidado).
-
-    All fields match the gold reference data with < 0.1% error. No LLM extraction required.
 
     Account mapping:
       Ativo                    → 1
@@ -109,23 +137,23 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
       Ativo Circulante         → 1.01
       Passivo Circulante       → 2.01
       Dív. Bruta               → 2.01.04 + 2.02.01
-      Patrim. Líq.             → 2.03 − 2.03.09  (total menos minoritários)
+      Patrim. Líq.             → _get_patrimonio_liquido()  (handles banks: 2.07 instead of 2.03)
       Fornecedores             → 2.01.02
-      Receita Líquida (12m)    → 3.01  (DFP: ÚLTIMO direto; ITR: H1 + DFP_dez − H1_ant)
-      Lucro Bruto (12m)        → 3.03  (mesmo método)
-      EBIT (12m)               → 3.03 + 3.04.01 + 3.04.02  (exclui equiv. patrimonial e outras)
-      EBITDA (12m)             → EBIT + abs(7.04.01)  (D&A da DVA, sinal negativo no DB)
-      Lucro Líquido (12m)      → 3.11.01 fallback 3.11
+      Receita Líquida (12m)    → 3.01
+      Lucro Bruto (12m)        → 3.03
+      EBIT (12m)               → 3.03 + 3.04.01 + 3.04.02
+      EBITDA (12m)             → EBIT + abs(7.04.01)  (D&A da DVA)
+      Lucro Líquido (12m)      → 3.11  (total consolidado, incluindo minoritários)
       Receita Líquida (3m)     → 3.01 DFP − 3.01 ITR acumulado
       EBIT (3m)                → (3.03 + 3.04.01 + 3.04.02) DFP − ITR acumulado
-      Lucro Líquido (3m)       → 3.11.01 fallback 3.11  (DFP − ITR acumulado)
+      Lucro Líquido (3m)       → 3.11 DFP − 3.11 ITR acumulado
     """
     ativo = _db_account(cnpj, "1", date)
     disponibilidades = _db_account(cnpj, "1.01.01", date) + _db_account(cnpj, "1.01.02", date)
     ativo_circulante = _db_account(cnpj, "1.01", date)
     passivo_circulante = _db_account(cnpj, "2.01", date)
     divida_bruta = _db_account(cnpj, "2.01.04", date) + _db_account(cnpj, "2.02.01", date)
-    patrimonio_liquido = _db_account(cnpj, "2.03", date) - _db_account(cnpj, "2.03.09", date)
+    patrimonio_liquido = _get_patrimonio_liquido(cnpj, date)
     fornecedores = _db_account(cnpj, "2.01.02", date)
 
     receita_liquida_anual = _db_account(cnpj, "3.01", date)
@@ -136,7 +164,7 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
         + _db_account(cnpj, "3.04.02", date)
     )
     ebitda_anual = ebit_anual + abs(_db_account(cnpj, "7.04.01", date))
-    lucro_liquido_anual = _db_account_with_fallback(cnpj, "3.11.01", "3.11", date)
+    lucro_liquido_anual = _db_account(cnpj, "3.11", date)
 
     receita_liquida_trimestre = _db_account(cnpj, "3.01", date) - _db_account(
         cnpj, "3.01", prev_date, period="accumulated"
@@ -150,9 +178,9 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
         + _db_account(cnpj, "3.04.01", prev_date, period="accumulated")
         + _db_account(cnpj, "3.04.02", prev_date, period="accumulated")
     )
-    lucro_liquido_trimestre = _db_account_with_fallback(
-        cnpj, "3.11.01", "3.11", date
-    ) - _db_account_with_fallback(cnpj, "3.11.01", "3.11", prev_date, period="accumulated")
+    lucro_liquido_trimestre = _db_account(cnpj, "3.11", date) - _db_account(
+        cnpj, "3.11", prev_date, period="accumulated"
+    )
 
     return {
         DB_ATIVO: ativo,
