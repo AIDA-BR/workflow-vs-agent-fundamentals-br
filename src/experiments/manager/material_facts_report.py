@@ -1,5 +1,3 @@
-import asyncio
-
 from agents import ModelSettings, Runner
 from src.experiments.providers import get_run_config
 from datetime import datetime, timedelta
@@ -15,7 +13,7 @@ from src.financial_agents.material_facts_summarizer import (
 from src.tools.material_facts import fetch_material_facts, fetch_material_facts_from_ipe
 
 
-def get_monthly_summary(
+async def get_monthly_summary(
     stock: StockInput,
     year: int,
     month: int,
@@ -64,13 +62,13 @@ def get_monthly_summary(
     )
 
     run_config = get_run_config(model)
-    run_result = asyncio.run(Runner.run(agent, input=inp, max_turns=5, run_config=run_config))
+    run_result = await Runner.run(agent, input=inp, max_turns=5, run_config=run_config)
     summary: MonthlySummary = run_result.final_output
     cache[cache_key] = summary
     return summary
 
 
-def get_six_month_summary(
+async def get_six_month_summary(
     stock: StockInput,
     analysis_date: datetime,
     model: Model,
@@ -84,7 +82,7 @@ def get_six_month_summary(
         ref = ref.replace(day=1) - timedelta(days=1)
     months.reverse()
 
-    monthly_summaries = [get_monthly_summary(stock, y, m, model, cache) for y, m in months]
+    monthly_summaries = [await get_monthly_summary(stock, y, m, model, cache) for y, m in months]
 
     start_ym = f"{months[0][0]}-{months[0][1]:02d}"
     end_ym = f"{months[-1][0]}-{months[-1][1]:02d}"
@@ -108,7 +106,7 @@ def get_six_month_summary(
     )
 
     run_config = get_run_config(model)
-    run_result = asyncio.run(Runner.run(agent, input=inp, max_turns=5, run_config=run_config))
+    run_result = await Runner.run(agent, input=inp, max_turns=5, run_config=run_config)
     return run_result.final_output
 
 

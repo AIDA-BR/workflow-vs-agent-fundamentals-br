@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -151,13 +152,13 @@ def _save_results(
         json.dump(agent_result, f, indent=4)
 
 
-if __name__ == "__main__":
+async def main():
     manager_decisions = []
     fundamental_analyses = []
     monthly_summary_cache: dict = {}
 
     experiment = ExperimentMetadata(
-        model=Model.GPT_5_MINI,
+        model=Model.SABIAZINHO_4,
         write_folder=WRITE_FOLDER,
         max_turns=15,
         reasoning=Intensity.MEDIUM,
@@ -267,7 +268,7 @@ if __name__ == "__main__":
                     # --- Material facts module ---
                     material_facts_report_str = ""
                     if experiment.use_material_facts:
-                        six_month_summary = get_six_month_summary(
+                        six_month_summary = await get_six_month_summary(
                             stock=stock,
                             analysis_date=analysis_date,
                             model=experiment.model,
@@ -284,13 +285,14 @@ if __name__ == "__main__":
                         with open(report_file, "w") as f:
                             f.write(material_facts_report_str)
 
-                    decision = financial_manager.run(
+                    decision = await financial_manager.run(
                         stock=stock,
                         stock_price=daily_stock_price,
                         date=analysis_date,
                         max_turns=experiment.max_turns,
                         indicators=indicators_str,
                         material_facts_report=material_facts_report_str,
+                        model=experiment.model,
                     )
 
                     end_time = time.time()
@@ -332,3 +334,7 @@ if __name__ == "__main__":
 
         if not is_error:
             break
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

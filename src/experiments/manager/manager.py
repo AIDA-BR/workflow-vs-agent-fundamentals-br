@@ -1,5 +1,3 @@
-import asyncio
-
 from agents import Agent, ModelSettings, RunConfig, Runner, RunResult
 from datetime import datetime
 from src.experiments import Intensity, Model, StockInput, is_maritaca_model
@@ -45,7 +43,7 @@ def init_agent(model: Model = Model.GPT_5_MINI) -> Agent:
     )
 
 
-def analyse(
+async def analyse(
     agent: Agent,
     name: str,
     cnpj: str,
@@ -65,12 +63,10 @@ def analyse(
         material_facts_report=material_facts_report,
     )
 
-    return asyncio.run(
-        Runner.run(agent, input=inp_data, max_turns=max_turns, run_config=run_config)
-    )
+    return await Runner.run(agent, input=inp_data, max_turns=max_turns, run_config=run_config)
 
 
-def run(
+async def run(
     stock: StockInput,
     stock_price: float,
     date: str | datetime,
@@ -82,7 +78,7 @@ def run(
     run_config = get_run_config(model)
     agent = init_agent(model)
 
-    result = analyse(
+    return await analyse(
         agent=agent,
         name=stock.name,
         cnpj=stock.cnpj,
@@ -93,5 +89,3 @@ def run(
         material_facts_report=material_facts_report,
         run_config=run_config,
     )
-
-    return result
