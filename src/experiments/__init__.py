@@ -31,6 +31,10 @@ class ExperimentMetadata(BaseModel):
         default=True, description="Enable fundamental analysis module"
     )
     use_material_facts: bool = Field(default=True, description="Enable material facts module")
+    material_facts_model: Model | None = Field(
+        default=None,
+        description="Model for material facts summarizer. Defaults to model if None.",
+    )
 
 
 class StockInput(BaseModel):

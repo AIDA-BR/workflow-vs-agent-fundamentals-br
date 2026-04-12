@@ -152,19 +152,20 @@ def _save_results(
         json.dump(agent_result, f, indent=4)
 
 
-async def main():
+async def run_experiment(experiment: ExperimentMetadata, stocks: list) -> None:
+    """
+    Run a single experiment configuration with the given stocks.
+
+    Parameters
+    ----------
+    experiment : ExperimentMetadata
+        Experiment configuration including model, modules to enable, and output folder
+    stocks : list
+        List of StockInput objects to analyze
+    """
     manager_decisions = []
     fundamental_analyses = []
     monthly_summary_cache: dict = {}
-
-    experiment = ExperimentMetadata(
-        model=Model.SABIAZINHO_4,
-        write_folder=WRITE_FOLDER,
-        max_turns=15,
-        reasoning=Intensity.MEDIUM,
-        verbosity=Intensity.MEDIUM,
-        reflection=False,
-    )
 
     if os.path.exists(f"{experiment.write_folder}/results_sample.json"):
         with open(f"{experiment.write_folder}/results_sample.json") as f:
@@ -184,7 +185,7 @@ async def main():
     while True:
         is_error = False
         try:
-            for stock in STOCKS:
+            for stock in stocks:
                 for year, month in _year_months(start=(2024, 1), end=(2025, 12)):
                     analysis_date = _get_first_workday(year, month)
                     print(f"Analisando {stock.stock_id} em {analysis_date}")
@@ -268,10 +269,11 @@ async def main():
                     # --- Material facts module ---
                     material_facts_report_str = ""
                     if experiment.use_material_facts:
+                        facts_model = experiment.material_facts_model or experiment.model
                         six_month_summary = await get_six_month_summary(
                             stock=stock,
                             analysis_date=analysis_date,
-                            model=experiment.model,
+                            model=facts_model,
                             cache=monthly_summary_cache,
                         )
                         material_facts_report_str = format_six_month_report(six_month_summary)
@@ -334,6 +336,19 @@ async def main():
 
         if not is_error:
             break
+
+
+async def main():
+    """Run the default experiment with SABIAZINHO_4 model."""
+    experiment = ExperimentMetadata(
+        model=Model.SABIAZINHO_4,
+        write_folder=WRITE_FOLDER,
+        max_turns=15,
+        reasoning=Intensity.MEDIUM,
+        verbosity=Intensity.MEDIUM,
+        reflection=False,
+    )
+    await run_experiment(experiment, STOCKS)
 
 
 if __name__ == "__main__":
