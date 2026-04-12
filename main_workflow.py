@@ -152,7 +152,11 @@ def _save_results(
         json.dump(agent_result, f, indent=4)
 
 
-async def run_experiment(experiment: ExperimentMetadata, stocks: list) -> None:
+async def run_experiment(
+    experiment: ExperimentMetadata,
+    stocks: list,
+    raw_facts_cache: dict | None = None,
+) -> None:
     """
     Run a single experiment configuration with the given stocks.
 
@@ -162,6 +166,9 @@ async def run_experiment(experiment: ExperimentMetadata, stocks: list) -> None:
         Experiment configuration including model, modules to enable, and output folder
     stocks : list
         List of StockInput objects to analyze
+    raw_facts_cache : dict | None
+        Pre-fetched raw material facts keyed by "{ticker}|{year}|{month}".
+        When provided, skips the fetch step inside get_monthly_summary.
     """
     manager_decisions = []
     fundamental_analyses = []
@@ -275,6 +282,7 @@ async def run_experiment(experiment: ExperimentMetadata, stocks: list) -> None:
                             analysis_date=analysis_date,
                             model=facts_model,
                             cache=monthly_summary_cache,
+                            raw_facts_cache=raw_facts_cache,
                         )
                         material_facts_report_str = format_six_month_report(six_month_summary)
 

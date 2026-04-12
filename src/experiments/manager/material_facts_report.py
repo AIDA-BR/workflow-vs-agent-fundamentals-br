@@ -19,16 +19,20 @@ async def get_monthly_summary(
     month: int,
     model: Model,
     cache: dict,
+    raw_facts_cache: dict | None = None,
 ) -> MonthlySummary:
     cache_key = (stock.stock_id, year, month)
     if cache_key in cache:
         return cache[cache_key]
 
-    news = fetch_material_facts_from_ipe(
-        cnpj=stock.cnpj, ticker=stock.stock_id, year=year, month=month
-    )
-    if not news:
-        news = fetch_material_facts(ticker=stock.stock_id, year=year, month=month)
+    if raw_facts_cache is not None:
+        news = raw_facts_cache.get(f"{stock.stock_id}|{year}|{month}", [])
+    else:
+        news = fetch_material_facts_from_ipe(
+            cnpj=stock.cnpj, ticker=stock.stock_id, year=year, month=month
+        )
+        if not news:
+            news = fetch_material_facts(ticker=stock.stock_id, year=year, month=month)
 
     if not news:
         result = MonthlySummary(
@@ -73,6 +77,7 @@ async def get_six_month_summary(
     analysis_date: datetime,
     model: Model,
     cache: dict,
+    raw_facts_cache: dict | None = None,
 ) -> SixMonthSummary:
     # Compute the 6 calendar months ending at the month before analysis_date
     months = []
@@ -82,7 +87,9 @@ async def get_six_month_summary(
         ref = ref.replace(day=1) - timedelta(days=1)
     months.reverse()
 
-    monthly_summaries = [await get_monthly_summary(stock, y, m, model, cache) for y, m in months]
+    monthly_summaries = [
+        await get_monthly_summary(stock, y, m, model, cache, raw_facts_cache) for y, m in months
+    ]
 
     start_ym = f"{months[0][0]}-{months[0][1]:02d}"
     end_ym = f"{months[-1][0]}-{months[-1][1]:02d}"

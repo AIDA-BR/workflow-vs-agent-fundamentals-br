@@ -293,5 +293,66 @@ def fetch_material_facts(
     return results
 
 
+_RAW_FACTS_CACHE_PATH = "data/raw_facts_cache.json"
+
+
+def prefetch_all_raw_facts(
+    stocks: list,
+    year_months: list[tuple[int, int]],
+    cache_path: str = _RAW_FACTS_CACHE_PATH,
+) -> dict:
+    """
+    Pre-fetch and cache raw material facts for all stocks and months.
+
+    Downloads PDFs, converts to markdown, and stores the resulting list[dict]
+    in a shared JSON cache indexed by "{ticker}|{year}|{month}". Existing
+    entries are reused so repeated calls are idempotent.
+
+    Parameters
+    ----------
+    stocks : list[StockInput]
+        Stocks to pre-fetch material facts for.
+    year_months : list[tuple[int, int]]
+        List of (year, month) pairs to cover.
+    cache_path : str
+        Path to the shared JSON cache file.
+
+    Returns
+    -------
+    dict
+        The full cache mapping "{ticker}|{year}|{month}" → list[dict].
+    """
+    # Load existing cache
+    raw_cache: dict = {}
+    if os.path.exists(cache_path):
+        with open(cache_path) as f:
+            raw_cache = json.load(f)
+
+    total = len(stocks) * len(year_months)
+    done = 0
+    for stock in stocks:
+        for year, month in year_months:
+            key = f"{stock.stock_id}|{year}|{month}"
+            done += 1
+            if key in raw_cache:
+                print(f"[{done}/{total}] Cache hit: {key}")
+                continue
+
+            print(f"[{done}/{total}] Fetching: {key}")
+            facts = fetch_material_facts_from_ipe(
+                cnpj=stock.cnpj, ticker=stock.stock_id, year=year, month=month
+            )
+            if not facts:
+                facts = fetch_material_facts(ticker=stock.stock_id, year=year, month=month)
+
+            raw_cache[key] = facts
+
+            # Persist after each entry so progress survives interruptions
+            with open(cache_path, "w") as f:
+                json.dump(raw_cache, f, indent=4, ensure_ascii=False)
+
+    return raw_cache
+
+
 if __name__ == "__main__":
     fetch_material_facts(ticker="PETR", year=2026, month=3, output_folder="facts/")

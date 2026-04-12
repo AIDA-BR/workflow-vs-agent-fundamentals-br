@@ -17,10 +17,19 @@ from dotenv import load_dotenv
 
 from src.experiments import ExperimentMetadata, Intensity, Model
 from src.experiments.manager.config import STOCKS
+from src.tools.material_facts import prefetch_all_raw_facts, _RAW_FACTS_CACHE_PATH
 from main_workflow import run_experiment
 
 load_dotenv()
 
+# (year, month) pairs for all 6-month windows used by analyses 2024-01 → 2025-12
+# First window: 2023-07..2023-12; last window: 2025-06..2025-11
+_PREFETCH_YEAR_MONTHS = [
+    (y, m)
+    for y in range(2023, 2026)
+    for m in range(1, 13)
+    if (y, m) >= (2023, 7) and (y, m) <= (2025, 11)
+]
 
 # Define the 4 experiment variations
 EXPERIMENTS = [
@@ -81,12 +90,23 @@ EXPERIMENTS = [
 
 
 async def main():
-    """Run all experiment variations sequentially."""
+    """Pre-fetch raw material facts once, then run all experiment variations sequentially."""
     print("=" * 80)
     print("INICIANDO EXECUÇÃO DAS 4 VARIAÇÕES DE EXPERIMENTO")
     print("=" * 80)
     print()
 
+    # --- Pre-fetch raw material facts (shared across all experiments) ---
+    print("PRÉ-FETCH: baixando e convertendo fatos relevantes (2023-07 a 2025-11)...")
+    raw_facts_cache = prefetch_all_raw_facts(
+        stocks=STOCKS,
+        year_months=_PREFETCH_YEAR_MONTHS,
+        cache_path=_RAW_FACTS_CACHE_PATH,
+    )
+    print(f"Pré-fetch concluído: {len(raw_facts_cache)} entradas em cache.")
+    print()
+
+    # --- Run each experiment using the pre-fetched cache ---
     for i, experiment_info in enumerate(EXPERIMENTS, 1):
         print("=" * 80)
         print(f"EXECUTANDO: {experiment_info['name']}")
@@ -95,10 +115,12 @@ async def main():
         print("=" * 80)
         print()
 
-        await run_experiment(experiment_info["config"], STOCKS)
+        # Pass raw_facts_cache only to experiments that use material facts
+        cache = raw_facts_cache if experiment_info["config"].use_material_facts else None
+        await run_experiment(experiment_info["config"], STOCKS, raw_facts_cache=cache)
 
         print()
-        print(f"✓ Variação {i} concluída com sucesso!")
+        print(f"Variação {i} concluída.")
         print()
 
     print("=" * 80)
