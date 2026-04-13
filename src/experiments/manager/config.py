@@ -14,7 +14,7 @@ STOCKS = [
     StockInput(
         name="ELECTRO ACO ALTONA S.A.",
         cnpj="82.643.537/0001-34",
-        stock_id="EALT3",
+        stock_id="EALT4",
     ),
     StockInput(name="PETRORECÔNCAVO S.A.", cnpj="03.342.704/0001-30", stock_id="RECV3"),
     StockInput(
