@@ -2,6 +2,7 @@ import json
 import os
 import pandas as pd
 import time
+from datetime import datetime
 
 from src.db.base_query import ResponseFormat, run_sql_query
 from src.experiments import ExperimentMetadata
@@ -27,7 +28,7 @@ from src.financial_agents.financial_analyst import (
 from src.settings import DB_PATH, PRICE_FILE
 
 
-def get_total_shares(cnpj: str, date: str) -> float:
+def get_total_shares(cnpj: str, date: str, shares_multiplier: float = 1.0) -> float:
     query = f"""
     SELECT TOTAL_SHARES_ISSUED, TOTAL_SHARES_TREASURY
     FROM CVM_SHARE_COMPOSITION
@@ -42,7 +43,7 @@ def get_total_shares(cnpj: str, date: str) -> float:
     row = rows[0]
     issued = float(row.get("TOTAL_SHARES_ISSUED") or 0)
     treasury = float(row.get("TOTAL_SHARES_TREASURY") or 0)
-    return issued - treasury
+    return (issued - treasury) * shares_multiplier
 
 
 def _db_account(
@@ -128,8 +129,11 @@ def _get_patrimonio_liquido(cnpj: str, date: str) -> float:
     return _db_account(cnpj, "2.03", date)
 
 
-def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
+def get_db_fields(cnpj: str, date: str, prev_date: str | None = None) -> dict[str, float]:
     """Fetches all 15 base financial fields directly from the CVM database (DF Consolidado).
+
+    prev_date: deprecated, kept for backward compatibility but ignored — all dates are
+    derived internally from `date`.
 
     Account mapping:
       Ativo                    → 1
@@ -139,15 +143,95 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
       Dív. Bruta               → 2.01.04 + 2.02.01
       Patrim. Líq.             → _get_patrimonio_liquido()  (handles banks: 2.07 instead of 2.03)
       Fornecedores             → 2.01.02
-      Receita Líquida (12m)    → 3.01
-      Lucro Bruto (12m)        → 3.03
-      EBIT (12m)               → 3.03 + 3.04.01 + 3.04.02
-      EBITDA (12m)             → EBIT + abs(7.04.01)  (D&A da DVA)
-      Lucro Líquido (12m)      → 3.11  (total consolidado, incluindo minoritários)
-      Receita Líquida (3m)     → 3.01 DFP − 3.01 ITR acumulado
-      EBIT (3m)                → (3.03 + 3.04.01 + 3.04.02) DFP − ITR acumulado
-      Lucro Líquido (3m)       → 3.11 DFP − 3.11 ITR acumulado
+      Receita Líquida (12m)    → TTM: YTD(date) + FY(prev_year_dec31) − YTD(same_period_prev_year)
+      Lucro Bruto (12m)        → TTM of 3.03
+      EBIT (12m)               → TTM of (3.03 + 3.04.01 + 3.04.02)
+      EBITDA (12m)             → TTM EBIT + abs(TTM 7.04.01)  [D&A from DVA]
+      Lucro Líquido (12m)      → TTM of 3.11.01 (controladores; fallback 3.11 se zero)
+      Receita Líquida (3m)     → YTD(date) − YTD(prev_quarter_end)  [isolated quarter]
+      EBIT (3m)                → isolated quarter of (3.03 + 3.04.01 + 3.04.02)
+      Lucro Líquido (3m)       → isolated quarter of 3.11.01 (fallback 3.11)
+
+    For DFP reports (month == 12) TTM equals the full-year YTD — no adjustment needed.
     """
+    date_dt = datetime.fromisoformat(date) if isinstance(date, str) else date
+    year, month, day = date_dt.year, date_dt.month, date_dt.day
+    is_annual = month == 12
+
+    # End of the previous quarter (for isolated-quarter calculation)
+    if month <= 3:
+        prev_quarter = f"{year - 1}-12-31"
+    elif month <= 6:
+        prev_quarter = f"{year}-03-31"
+    elif month <= 9:
+        prev_quarter = f"{year}-06-30"
+    else:
+        prev_quarter = f"{year}-09-30"
+
+    # Dates needed for TTM on ITR reports
+    fy_prev = f"{year - 1}-12-31"
+    ytd_prev = f"{year - 1}-{month:02d}-{day:02d}"
+
+    def _ttm(account: str) -> float:
+        """Trailing Twelve Months for a single income-statement account.
+
+        DFP (annual): value is already 12 months — return as-is.
+        ITR (quarterly): TTM = YTD_current + FY_prev_year − YTD_same_period_prev_year
+        """
+        ytd_current = _db_account(cnpj, account, date, period="accumulated")
+        if is_annual:
+            return ytd_current
+        return (
+            ytd_current
+            + _db_account(cnpj, account, fy_prev)
+            - _db_account(cnpj, account, ytd_prev, period="accumulated")
+        )
+
+    def _ttm_controlling(account_ctrl: str, account_total: str) -> float:
+        """TTM for a controlling-shareholders account, falling back to total if zero.
+
+        Market convention (Fundamentus, etc.) uses the portion attributable to
+        controlling shareholders (e.g. 3.11.01) for LPA/ROE/P/L. Falls back to
+        the consolidated total (e.g. 3.11) for companies with no minority interests
+        (where 3.11.01 == 3.11).
+
+        Consistency check: only uses account_ctrl if that sub-account is populated
+        in ALL periods required for the TTM calculation. Some companies report
+        3.11.01 in ITR but not in DFP (or vice-versa); mixing them produces a
+        wrong TTM (e.g. YTD_current + 0 − YTD_prev ≠ real TTM).
+        """
+        if is_annual:
+            ctrl_val = _db_account(cnpj, account_ctrl, date, period="accumulated")
+            return ctrl_val if ctrl_val != 0.0 else _ttm(account_total)
+
+        ctrl_ytd = _db_account(cnpj, account_ctrl, date, period="accumulated")
+        ctrl_fy_prev = _db_account(cnpj, account_ctrl, fy_prev)
+        ctrl_ytd_prev = _db_account(cnpj, account_ctrl, ytd_prev, period="accumulated")
+        if ctrl_ytd != 0.0 and ctrl_fy_prev != 0.0 and ctrl_ytd_prev != 0.0:
+            return ctrl_ytd + ctrl_fy_prev - ctrl_ytd_prev
+        return _ttm(account_total)
+
+    def _ttm_sum(*accounts: str) -> float:
+        return sum(_ttm(acc) for acc in accounts)
+
+    def _quarter(account: str) -> float:
+        """Isolated current quarter = YTD(date) − YTD(prev_quarter_end).
+
+        Special case — Q1 (March 31 ITR): prev_quarter is Dec 31 of the prior
+        year, which holds a full-year (12-month) DFP value.  Subtracting it
+        from the 3-month Q1 YTD would yield a large negative number.
+        For Q1 the YTD *is* the isolated quarter, so we return it directly.
+        """
+        if month <= 3:
+            return _db_account(cnpj, account, date, period="accumulated")
+        return _db_account(cnpj, account, date, period="accumulated") - _db_account(
+            cnpj, account, prev_quarter, period="accumulated"
+        )
+
+    def _quarter_sum(*accounts: str) -> float:
+        return sum(_quarter(acc) for acc in accounts)
+
+    # --- Balance sheet (point-in-time, no TTM needed) ---
     ativo = _db_account(cnpj, "1", date)
     disponibilidades = _db_account(cnpj, "1.01.01", date) + _db_account(cnpj, "1.01.02", date)
     ativo_circulante = _db_account(cnpj, "1.01", date)
@@ -156,31 +240,32 @@ def get_db_fields(cnpj: str, date: str, prev_date: str) -> dict[str, float]:
     patrimonio_liquido = _get_patrimonio_liquido(cnpj, date)
     fornecedores = _db_account(cnpj, "2.01.02", date)
 
-    receita_liquida_anual = _db_account(cnpj, "3.01", date)
-    lucro_bruto_anual = _db_account(cnpj, "3.03", date)
-    ebit_anual = (
-        _db_account(cnpj, "3.03", date)
-        + _db_account(cnpj, "3.04.01", date)
-        + _db_account(cnpj, "3.04.02", date)
-    )
-    ebitda_anual = ebit_anual + abs(_db_account(cnpj, "7.04.01", date))
-    lucro_liquido_anual = _db_account(cnpj, "3.11", date)
+    # --- Income statement — 12-month TTM ---
+    receita_liquida_anual = _ttm("3.01")
+    lucro_bruto_anual = _ttm("3.03")
+    ebit_anual = _ttm_sum("3.03", "3.04.01", "3.04.02")
+    ebitda_anual = ebit_anual + abs(_ttm("7.04.01"))
+    lucro_liquido_anual = _ttm_controlling("3.11.01", "3.11")
 
-    receita_liquida_trimestre = _db_account(cnpj, "3.01", date) - _db_account(
-        cnpj, "3.01", prev_date, period="accumulated"
-    )
-    ebit_trimestre = (
-        _db_account(cnpj, "3.03", date)
-        + _db_account(cnpj, "3.04.01", date)
-        + _db_account(cnpj, "3.04.02", date)
-    ) - (
-        _db_account(cnpj, "3.03", prev_date, period="accumulated")
-        + _db_account(cnpj, "3.04.01", prev_date, period="accumulated")
-        + _db_account(cnpj, "3.04.02", prev_date, period="accumulated")
-    )
-    lucro_liquido_trimestre = _db_account(cnpj, "3.11", date) - _db_account(
-        cnpj, "3.11", prev_date, period="accumulated"
-    )
+    # --- Income statement — isolated quarter ---
+    receita_liquida_trimestre = _quarter("3.01")
+    ebit_trimestre = _quarter_sum("3.03", "3.04.01", "3.04.02")
+    # Use 3.11.01 (controladores) for the isolated quarter only if the sub-account
+    # is available in BOTH the current and previous-quarter periods; otherwise fall
+    # back to 3.11 (total) to avoid a spurious result from an incomplete subtraction.
+    # Q1 special case: prev_quarter is the prior-year DFP (12m), so we only use
+    # curr_quarter_ctrl directly (same rationale as _quarter above).
+    curr_quarter_ctrl = _db_account(cnpj, "3.11.01", date, period="accumulated")
+    if month <= 3:
+        lucro_liquido_trimestre = (
+            curr_quarter_ctrl if curr_quarter_ctrl != 0.0 else _quarter("3.11")
+        )
+    else:
+        prev_quarter_ctrl = _db_account(cnpj, "3.11.01", prev_quarter, period="accumulated")
+        if curr_quarter_ctrl != 0.0 and prev_quarter_ctrl != 0.0:
+            lucro_liquido_trimestre = curr_quarter_ctrl - prev_quarter_ctrl
+        else:
+            lucro_liquido_trimestre = _quarter("3.11")
 
     return {
         DB_ATIVO: ativo,
@@ -217,8 +302,10 @@ def run(experiment_metadata: ExperimentMetadata, n_times: int = 3):
                 continue
             print(stock, experiment_id)
             start = time.time()
-            db_fields = get_db_fields(cnpj=cnpj, date="2024-12-31", prev_date="2024-09-30")
-            total_shares = get_total_shares(cnpj=cnpj, date="2024-12-31")
+            db_fields = get_db_fields(cnpj=cnpj, date="2024-12-31")
+            total_shares = get_total_shares(
+                cnpj=cnpj, date="2024-12-31", shares_multiplier=stock.shares_multiplier
+            )
             output = compute_indicators(db_fields=db_fields, price=price, total_shares=total_shares)
             end = time.time()
 

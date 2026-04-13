@@ -41,3 +41,11 @@ class StockInput(BaseModel):
     name: str
     cnpj: str
     stock_id: str
+    shares_multiplier: float = Field(
+        default=1.0,
+        description=(
+            "Multiplier for total shares from CVM_SHARE_COMPOSITION. "
+            "Use 1000 for companies that store shares in thousands (e.g. EALT4). "
+            "Use 1/3 for unit certificates where 1 unit = 3 individual shares (e.g. ALUP11)."
+        ),
+    )

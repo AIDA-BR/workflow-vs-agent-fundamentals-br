@@ -1,5 +1,4 @@
-import calendar
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from src.experiments import StockInput
 from src.experiments.fundamental_analysis.workflow import get_db_fields, get_total_shares
@@ -53,17 +52,12 @@ def run(
     if isinstance(date, str):
         date = datetime.fromisoformat(date)
 
-    # prev_date = last calendar day of the quarter before date's quarter
-    prev_month_end = date.replace(day=1) - timedelta(days=1)
-    prev_date = prev_month_end.replace(
-        day=calendar.monthrange(prev_month_end.year, prev_month_end.month)[1]
-    )
-
     date_str = date.strftime("%Y-%m-%d")
-    prev_date_str = prev_date.strftime("%Y-%m-%d")
 
-    db_fields = get_db_fields(cnpj=stock.cnpj, date=date_str, prev_date=prev_date_str)
-    total_shares = get_total_shares(cnpj=stock.cnpj, date=date_str)
+    db_fields = get_db_fields(cnpj=stock.cnpj, date=date_str)
+    total_shares = get_total_shares(
+        cnpj=stock.cnpj, date=date_str, shares_multiplier=stock.shares_multiplier
+    )
     output = compute_indicators(db_fields=db_fields, price=stock_price, total_shares=total_shares)
 
     return WorkflowResult(output=output)
