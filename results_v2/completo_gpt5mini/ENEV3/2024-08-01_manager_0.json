@@ -1,0 +1,107 @@
+{
+    "usage": {
+        "requests": 5,
+        "input_tokens": 72968,
+        "output_tokens": 6956,
+        "total_tokens": 79924
+    },
+    "steps": [
+        {
+            "id": "rs_0d52c6a7a14f6dd50069ddc913b230819982fc9c75c3723a2c",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Calculations for ENEV3 based on provided numbers (row 79 / 2024-08-01)\\npatrimonio = 1.232677e+10  # R$\\nvpa = 7.811220\\npreco = 12.54\\ndiv_liq = 1.744885e+10\\nebit_12m = 2.600822e+09\\n\\n# estimate shares\\nshares = patrimonio / vpa\\nmarket_cap = preco * shares\\n# estimate EBITDA implicit: earlier note suggests EBITDA ~ EV / (EV/EBITDA) but we can infer EBITDA = ebit_12m + implied D&A. Lacking D&A, we can back out EBITDA from earlier EV/EBITDA ~ 8.98 (from near rows), but safer to use EBITDA estimate from previous rows e.g., ~4.22e9.\\n# We'll infer EBITDA by using EV/EBITDA ~ 8.98 as per row 78 approximate\\nev_over_ebitda = 8.98\\n# EV = market_cap + div_liq\\nev = market_cap + div_liq\\nebitda = ev / ev_over_ebitda\\n\\n# Target scenario: EV/EBITDA target = 10.5x\\nev_target = ebitda * 10.5\\nmarket_cap_target = ev_target - div_liq\\nprice_target = market_cap_target / shares\\n\\nshares, market_cap, ev, ebitda, ev_target, market_cap_target, price_target\\nprint(f'shares = {shares:.0f}')\\nprint(f'market_cap = R${market_cap:,.0f}')\\nprint(f'EV (market_cap + net debt) = R${ev:,.0f}')\\nprint(f'EBITDA (implied) = R${ebitda:,.0f}')\\nprint(f'EV target (10.5x) = R${ev_target:,.0f}')\\nprint(f'Market cap target = R${market_cap_target:,.0f}')\\nprint(f'Price target = R${price_target:.2f}')\\n\"} }",
+            "call_id": "call_DEp1qgDvDSQ0pDDYyQZU1k5w",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0d52c6a7a14f6dd50069ddc93549cc8199a215c29282cf96d9",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_DEp1qgDvDSQ0pDDYyQZU1k5w",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'shares = 1578085113\\\\nmarket_cap = R$19,789,187,323\\\\nEV (market_cap + net debt) = R$37,238,037,323\\\\nEBITDA (implied) = R$4,146,774,758\\\\nEV target (10.5x) = R$43,541,134,954\\\\nMarket cap target = R$26,092,284,954\\\\nPrice target = R$16.53\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0d52c6a7a14f6dd50069ddc93e66148199bc8806af20f3e5d5",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Compute dilution for base follow-on 3.2b at 14.00\\nbase_amount = 3.2e9\\noffer_price = 14.0\\nnew_shares = base_amount / offer_price\\npre_shares = 1.578085113e9  # from previous calc\\npost_shares = pre_shares + new_shares\\npct_increase = new_shares / pre_shares * 100\\npct_new_of_post = new_shares / post_shares * 100\\n\\nprint(f'new_shares = {new_shares:.0f}')\\nprint(f'pre_shares = {pre_shares:.0f}')\\nprint(f'post_shares = {post_shares:.0f}')\\nprint(f'% increase in shares = {pct_increase:.2f}%')\\nprint(f'new shares as % of post-offer = {pct_new_of_post:.2f}%')\\n\"}}",
+            "call_id": "call_nvlZ30VNQUSxsTG9DUHJ20vd",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0d52c6a7a14f6dd50069ddc94f2afc819997081f6f2d91550b",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_nvlZ30VNQUSxsTG9DUHJ20vd",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'new_shares = 228571429\\\\npre_shares = 1578085113\\\\npost_shares = 1806656542\\\\n% increase in shares = 14.48%\\\\nnew shares as % of post-offer = 12.65%\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0d52c6a7a14f6dd50069ddc9536e908199b3f2c4e1848cbb8e",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Using previous computed values to calculate sensitivity for EV/EBITDA\\nshares = 1.578085113e9\\ndiv_liq = 1.744885e10\\nebitda = 4.146774758e9\\n\\ndef price_from_ev_ebitda(target_mult):\\n    ev_target = ebitda * target_mult\\n    market_cap_target = ev_target - div_liq\\n    price = market_cap_target / shares\\n    return ev_target, market_cap_target, price\\n\\nfor mult in [9.0, 10.5, 11.5]:\\n    ev_t, mc_t, price_t = price_from_ev_ebitda(mult)\\n    print(f'EV/EBITDA {mult}x -> price target = R${price_t:.2f} (EV target R${ev_t/1e9:.2f}bn, MarketCapTarget R${mc_t/1e9:.2f}bn)')\\n\\n# compute net debt / ebitda\\nnet_debt = div_liq\\nnd_ebitda = net_debt / ebitda\\nprint(f'Net debt / EBITDA = {nd_ebitda:.2f}x')\\n\\n# P/VP\\nvpa = 7.81122\\nprice = 12.54\\np_vp = price / vpa\\nprint(f'P/VP = {p_vp:.2f}x')\\n\\n# P/EBIT\\nebit = 2.600822e9\\nmarket_cap = price * shares\\np_ebit = market_cap / ebit\\nprint(f'P/EBIT = {p_ebit:.2f}x')\\n\"}}",
+            "call_id": "call_iX1GqbXAYuBLWVsXWsZP5jrw",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0d52c6a7a14f6dd50069ddc95b8cf48199b2d22ccf6b82d93b",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_iX1GqbXAYuBLWVsXWsZP5jrw",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'EV/EBITDA 9.0x -> price target = R$12.59 (EV target R$37.32bn, MarketCapTarget R$19.87bn)\\\\nEV/EBITDA 10.5x -> price target = R$16.53 (EV target R$43.54bn, MarketCapTarget R$26.09bn)\\\\nEV/EBITDA 11.5x -> price target = R$19.16 (EV target R$47.69bn, MarketCapTarget R$30.24bn)\\\\nNet debt / EBITDA = 4.21x\\\\nP/VP = 1.61x\\\\nP/EBIT = 7.61x\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0d52c6a7a14f6dd50069ddc962dac88199800d32b0c99b7d0b",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Compute dilution for full follow-on up to 4.2b at 14.0\\nfull_amount = 4.2e9\\noffer_price = 14.0\\nnew_shares_full = full_amount / offer_price\\npre_shares = 1.578085113e9\\npost_shares_full = pre_shares + new_shares_full\\npct_increase_full = new_shares_full / pre_shares * 100\\npct_new_of_post_full = new_shares_full / post_shares_full * 100\\n\\nprint(f'new_shares_full = {new_shares_full:.0f}')\\nprint(f'post_shares_full = {post_shares_full:.0f}')\\nprint(f'% increase in shares (full) = {pct_increase_full:.2f}%')\\nprint(f'new shares as % of post-offer (full) = {pct_new_of_post_full:.2f}%')\\n\"} }",
+            "call_id": "call_lK6xO1JQYFoe6TSUfQl38d3l",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0d52c6a7a14f6dd50069ddc9681aac8199b9a655640271e2c8",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_lK6xO1JQYFoe6TSUfQl38d3l",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'new_shares_full = 300000000\\\\npost_shares_full = 1878085113\\\\n% increase in shares (full) = 19.01%\\\\nnew shares as % of post-offer (full) = 15.97%\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0d52c6a7a14f6dd50069ddc96c36bc819995f38d888548b9b5",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_0d52c6a7a14f6dd50069ddc980c0e881998f21ddc348bddc67",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\n  \"recommendation\": \"Manter\",\n  \"justification\": \"Resumo executivo (preg\u00e3o 01/08/2024, pre\u00e7o R$12,54): Recomenda-se Manter. A Eneva apresenta opera\u00e7\u00e3o com margem operacional s\u00f3lida e amplia\u00e7\u00e3o recente da base de recursos (declara\u00e7\u00f5es de comercialidade + laudo GCA) e anunciou iniciativas de crescimento (mem. vinculantes de M&A) al\u00e9m de um follow\u2011on que reduz o risco de financiamento do plano. No entanto, a companhia continua com alavancagem elevada, lucro l\u00edquido vol\u00e1til/negativo no TTM e execu\u00e7\u00e3o dependente de aprova\u00e7\u00f5es (PDPs), offtake e integra\u00e7\u00e3o das aquisi\u00e7\u00f5es \u2014 fatores que limitam um rating de Compra no curto\u2011m\u00e9dio prazo.\\n\\nPrincipais n\u00fameros usados (fechamento 01/08/2024):\\n- Pre\u00e7o: R$12,54\\n- A\u00e7\u00f5es estimadas: ~1.578.085.113\\n- Market cap \u2248 R$19,79 bi\\n- D\u00edvida l\u00edquida \u2248 R$17,45 bi \u2192 EV \u2248 R$37,24 bi\\n- EBITDA impl\u00edcito \u2248 R$4,15 bi \u2192 Net debt / EBITDA \u2248 4,2x\\n- P/EBIT \u2248 7,6x; P/VPA \u2248 1,61x\\n\\nFollow\u2011on e dilui\u00e7\u00e3o (impacto sobre execu\u00e7\u00e3o):\\n- Follow\u2011on base R$3,2 bi a R$14,00 \u2192 emiss\u00e3o \u2248 228,6 M a\u00e7\u00f5es (\u2248 +14,5% de a\u00e7\u00f5es em circula\u00e7\u00e3o; novas a\u00e7\u00f5es \u2248 12,65% do capital p\u00f3s\u2011oferta). Partners Alpha comprometido com 100% do Valor Base reduz risco de fracasso da capta\u00e7\u00e3o.\\n- Op\u00e7\u00e3o adicional at\u00e9 R$4,2 bi \u2192 emiss\u00e3o total \u2248 300 M a\u00e7\u00f5es (at\u00e9 \u2248 +19% de aumento das a\u00e7\u00f5es; novas a\u00e7\u00f5es \u2248 15,97% do capital p\u00f3s\u2011oferta) se exercida.\\n\\nDeriva\u00e7\u00e3o do pre\u00e7o\u2011alvo (horizonte 6\u201312 meses):\\n- Metodologia: valuation por EV/EBITDA, cen\u00e1rio central assume re\u2011rating moderado para EV/EBITDA = 10,5x (efeito de desalavancagem e sucesso nas aquisi\u00e7\u00f5es / monetiza\u00e7\u00e3o de reservas).\\n- EV alvo = EBITDA impl\u00edcito * 10,5 \u2192 Market cap alvo \u2248 R$26,09 bi \u2192 Pre\u00e7o alvo \u2248 R$16,53.\\n- Sensibilidade: EV/EBITDA 9x \u2192 R$12,59 (pouco upside); EV/EBITDA 11,5x \u2192 R$19,16 (upside expressivo).\\n\\nRiscos principais:\\n- Alavancagem elevada e necessidade de capex para converter recursos em produ\u00e7\u00e3o (risco de dilui\u00e7\u00e3o/maior custo de capital);\\n- Lucro l\u00edquido vol\u00e1til / preju\u00edzo TTM (P/L pouco informativo);\\n- Execu\u00e7\u00e3o das aquisi\u00e7\u00f5es, aprova\u00e7\u00e3o regulat\u00f3ria (CADE, Bacen), e obten\u00e7\u00e3o de offtake/financiamento para PDPs;\\n- Termos da reestrutura\u00e7\u00e3o de subsidi\u00e1rias (caso relevante) e eventuais altera\u00e7\u00f5es no acordo de acionistas que afetem liquidez/controle.\\n\\nCatalisadores a monitorar (decisivos para rever recomenda\u00e7\u00e3o): fechamento do follow\u2011on e aloca\u00e7\u00e3o dos recursos; conclus\u00e3o das aquisi\u00e7\u00f5es com sinergias comprovadas; aprova\u00e7\u00e3o e cronograma dos PDPs; redu\u00e7\u00e3o efetiva da d\u00edvida l\u00edquida; pr\u00f3ximos trimestres mostrando recupera\u00e7\u00e3o consistente do lucro l\u00edquido.\\n\\nRecomenda\u00e7\u00e3o pr\u00e1tica: manter posi\u00e7\u00f5es para investidores j\u00e1 expostos e monitorar de perto os eventos listados. Para novos investidores: entrada cautelosa \u2014 prefer\u00edvel escalonar compras (ou aguardar recuo < R$12,00) e/ou aguardar sinais claros de desalavancagem e execu\u00e7\u00e3o bem\u2011sucedida das opera\u00e7\u00f5es anunciadas.\\n\\nHorizonte do pre\u00e7o\u2011alvo: 6\u201312 meses condicionado ao sucesso das capta\u00e7\u00f5es e integra\u00e7\u00e3o das aquisi\u00e7\u00f5es.\",\n  \"target_price\": 16.53\n}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 171.9292528629303,
+    "output": {
+        "recommendation": "Manter",
+        "justification": "Resumo executivo (preg\u00e3o 01/08/2024, pre\u00e7o R$12,54): Recomenda-se Manter. A Eneva apresenta opera\u00e7\u00e3o com margem operacional s\u00f3lida e amplia\u00e7\u00e3o recente da base de recursos (declara\u00e7\u00f5es de comercialidade + laudo GCA) e anunciou iniciativas de crescimento (mem. vinculantes de M&A) al\u00e9m de um follow\u2011on que reduz o risco de financiamento do plano. No entanto, a companhia continua com alavancagem elevada, lucro l\u00edquido vol\u00e1til/negativo no TTM e execu\u00e7\u00e3o dependente de aprova\u00e7\u00f5es (PDPs), offtake e integra\u00e7\u00e3o das aquisi\u00e7\u00f5es \u2014 fatores que limitam um rating de Compra no curto\u2011m\u00e9dio prazo.\n\nPrincipais n\u00fameros usados (fechamento 01/08/2024):\n- Pre\u00e7o: R$12,54\n- A\u00e7\u00f5es estimadas: ~1.578.085.113\n- Market cap \u2248 R$19,79 bi\n- D\u00edvida l\u00edquida \u2248 R$17,45 bi \u2192 EV \u2248 R$37,24 bi\n- EBITDA impl\u00edcito \u2248 R$4,15 bi \u2192 Net debt / EBITDA \u2248 4,2x\n- P/EBIT \u2248 7,6x; P/VPA \u2248 1,61x\n\nFollow\u2011on e dilui\u00e7\u00e3o (impacto sobre execu\u00e7\u00e3o):\n- Follow\u2011on base R$3,2 bi a R$14,00 \u2192 emiss\u00e3o \u2248 228,6 M a\u00e7\u00f5es (\u2248 +14,5% de a\u00e7\u00f5es em circula\u00e7\u00e3o; novas a\u00e7\u00f5es \u2248 12,65% do capital p\u00f3s\u2011oferta). Partners Alpha comprometido com 100% do Valor Base reduz risco de fracasso da capta\u00e7\u00e3o.\n- Op\u00e7\u00e3o adicional at\u00e9 R$4,2 bi \u2192 emiss\u00e3o total \u2248 300 M a\u00e7\u00f5es (at\u00e9 \u2248 +19% de aumento das a\u00e7\u00f5es; novas a\u00e7\u00f5es \u2248 15,97% do capital p\u00f3s\u2011oferta) se exercida.\n\nDeriva\u00e7\u00e3o do pre\u00e7o\u2011alvo (horizonte 6\u201312 meses):\n- Metodologia: valuation por EV/EBITDA, cen\u00e1rio central assume re\u2011rating moderado para EV/EBITDA = 10,5x (efeito de desalavancagem e sucesso nas aquisi\u00e7\u00f5es / monetiza\u00e7\u00e3o de reservas).\n- EV alvo = EBITDA impl\u00edcito * 10,5 \u2192 Market cap alvo \u2248 R$26,09 bi \u2192 Pre\u00e7o alvo \u2248 R$16,53.\n- Sensibilidade: EV/EBITDA 9x \u2192 R$12,59 (pouco upside); EV/EBITDA 11,5x \u2192 R$19,16 (upside expressivo).\n\nRiscos principais:\n- Alavancagem elevada e necessidade de capex para converter recursos em produ\u00e7\u00e3o (risco de dilui\u00e7\u00e3o/maior custo de capital);\n- Lucro l\u00edquido vol\u00e1til / preju\u00edzo TTM (P/L pouco informativo);\n- Execu\u00e7\u00e3o das aquisi\u00e7\u00f5es, aprova\u00e7\u00e3o regulat\u00f3ria (CADE, Bacen), e obten\u00e7\u00e3o de offtake/financiamento para PDPs;\n- Termos da reestrutura\u00e7\u00e3o de subsidi\u00e1rias (caso relevante) e eventuais altera\u00e7\u00f5es no acordo de acionistas que afetem liquidez/controle.\n\nCatalisadores a monitorar (decisivos para rever recomenda\u00e7\u00e3o): fechamento do follow\u2011on e aloca\u00e7\u00e3o dos recursos; conclus\u00e3o das aquisi\u00e7\u00f5es com sinergias comprovadas; aprova\u00e7\u00e3o e cronograma dos PDPs; redu\u00e7\u00e3o efetiva da d\u00edvida l\u00edquida; pr\u00f3ximos trimestres mostrando recupera\u00e7\u00e3o consistente do lucro l\u00edquido.\n\nRecomenda\u00e7\u00e3o pr\u00e1tica: manter posi\u00e7\u00f5es para investidores j\u00e1 expostos e monitorar de perto os eventos listados. Para novos investidores: entrada cautelosa \u2014 prefer\u00edvel escalonar compras (ou aguardar recuo < R$12,00) e/ou aguardar sinais claros de desalavancagem e execu\u00e7\u00e3o bem\u2011sucedida das opera\u00e7\u00f5es anunciadas.\n\nHorizonte do pre\u00e7o\u2011alvo: 6\u201312 meses condicionado ao sucesso das capta\u00e7\u00f5es e integra\u00e7\u00e3o das aquisi\u00e7\u00f5es.",
+        "target_price": 16.53
+    }
+}

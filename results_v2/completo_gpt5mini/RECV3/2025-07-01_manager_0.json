@@ -1,0 +1,107 @@
+{
+    "usage": {
+        "requests": 5,
+        "input_tokens": 116050,
+        "output_tokens": 7937,
+        "total_tokens": 123987
+    },
+    "steps": [
+        {
+            "id": "rs_06a8b6e8cb80bae20069ddf80ea8348194a14f933a69f793f4",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Compute key metrics using provided numbers\\nshares = 293112130\\nprice = 14.7\\nmarket_cap = shares * price\\nnet_debt = 838193000.0  # from table\\n# EV/EBITDA provided 2.98177, compute implied EBITDA\\nev_over_ebitda = 2.98177\\n# EV = market_cap + net_debt\\nEV = market_cap + net_debt\\nimplied_ebitda = EV / ev_over_ebitda\\n# Print results with formatting\\nprint(f\\\"Market cap: {market_cap:,.0f} BRL\\\")\\nprint(f\\\"EV (market cap + net debt): {EV:,.0f} BRL\\\")\\nprint(f\\\"Implied EBITDA (from EV and EV/EBITDA {ev_over_ebitda}): {implied_ebitda:,.0f} BRL\\\")\\nprint(f\\\"Net debt / EBITDA: {net_debt / implied_ebitda:.2f}x\\\")\\n# Additional metrics: P/L and LPA\\nlpa = 1.894700\\npl = price / lpa\\nvpa = 15.238981\\np_vp = price / vpa\\nprint(f\\\"P/L (price / LPA): {pl:.2f}\\\")\\nprint(f\\\"P/VP (price / VPA): {p_vp:.2f}\\\")\\n# EV/EBIT: EV / EBIT\\nebit = 1020149000.0\\nev_over_ebit = EV / ebit\\nprint(f\\\"EV/EBIT (calculated): {ev_over_ebit:.2f}\\\")\\n# Print margin and ROE\\nroe = 12.433246\\nprint(f\\\"ROE: {roe:.2f}%\\\")\\n\\n# For valuation target: adopt EV/EBITDA = 5.5 base case\\ntarget_ev_ebitda = 5.5\\ntarget_EV = implied_ebitda * target_ev_ebitda\\n# target market cap = target EV - net debt\\ntarget_market_cap = target_EV - net_debt\\ntarget_price = target_market_cap / shares\\nprint(f\\\"Target price (EV/EBITDA={target_ev_ebitda}): R$ {target_price:.2f}\\\")\\n\\n# Also compute scenario prices for 4.5x, 5.5x, 6.5x\\nfor m in [4.5,5.5,6.5]:\\n    tv = implied_ebitda * m\\n    tmcap = tv - net_debt\\n    tprice = tmcap / shares\\n    print(f\\\"EV/EBITDA={m}: price = R$ {tprice:.2f}\\\")\\n\\n# Print implied EV/EBITDA if using EBITDA derived from given EBIT and assuming depreciation unknown\\n# But we have EV/EBITDA from table which is consistent\\n\\n# Return values\\nresult = {\\n    'market_cap': market_cap,\\n    'EV': EV,\\n    'implied_ebitda': implied_ebitda,\\n    'net_debt_to_ebitda': net_debt / implied_ebitda,\\n    'pl': pl,\\n    'p_vp': p_vp,\\n    'ev_over_ebit_calc': ev_over_ebit,\\n    'target_price_5_5': target_price\\n}\\nprint('\\\\nJSON output:')\\nimport json\\nprint(json.dumps(result))\\n\"}}",
+            "call_id": "call_jojCHA4DeZqjlpunLTNjVsFQ",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_06a8b6e8cb80bae20069ddf81ca2b0819494aff4424f648a0c",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_jojCHA4DeZqjlpunLTNjVsFQ",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'Market cap: 4,308,748,311 BRL\\\\nEV (market cap + net debt): 5,146,941,311 BRL\\\\nImplied EBITDA (from EV and EV/EBITDA 2.98177): 1,726,136,258 BRL\\\\nNet debt / EBITDA: 0.49x\\\\nP/L (price / LPA): 7.76\\\\nP/VP (price / VPA): 0.96\\\\nEV/EBIT (calculated): 5.05\\\\nROE: 12.43%\\\\nTarget price (EV/EBITDA=5.5): R$ 29.53\\\\nEV/EBITDA=4.5: price = R$ 23.64\\\\nEV/EBITDA=5.5: price = R$ 29.53\\\\nEV/EBITDA=6.5: price = R$ 35.42\\\\n\\\\nJSON output:\\\\n{\"market_cap\": 4308748311.0, \"EV\": 5146941311.0, \"implied_ebitda\": 1726136258.329784, \"net_debt_to_ebitda\": 0.4855891277152354, \"pl\": 7.758484192748192, \"p_vp\": 0.9646314277837867, \"ev_over_ebit_calc\": 5.045283885981362, \"target_price_5_5\": 29.529847232230928}\\\\n\\'\\nStdErr:\\nb\\'\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_06a8b6e8cb80bae20069ddf8267b50819482ddcaa7bd9a7cc7",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"shares = 293112130\\n\\nscenarios = [\\n    {'ebitda': 1726136258.329784, 'net_debt': 838193000.0, 'label':'Latest implied EBITDA/net debt 838.193M'},\\n    {'ebitda': 1405000000.0, 'net_debt': 734800000.0, 'label':'EBITDA 1.405bn / net debt 734.8M'},\\n    {'ebitda': 1282000000.0, 'net_debt': 1315500000.0, 'label':'EBITDA 1.282bn / net debt 1.3155bn (post debentures) - earlier conservative'},\\n    {'ebitda': 1282000000.0, 'net_debt': 1725500000.0, 'label':'EBITDA 1.282bn / net debt 1.7255bn (post debentures + JCP)'}\\n]\\n\\nfor s in scenarios:\\n    ebitda = s['ebitda']\\n    nd = s['net_debt']\\n    for m in [4.5,5.5,6.5]:\\n        target_ev = ebitda * m\\n        target_mcap = target_ev - nd\\n        target_price = target_mcap / shares\\n        print(f\\\"{s['label']}: EV/EBITDA={m} -> Target price = R$ {target_price:.2f}\\\")\\n    print('---')\\n\"}}",
+            "call_id": "call_E0ONHqbeVPtYNYu3tmTmzqvF",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_06a8b6e8cb80bae20069ddf8309ecc8194834a029b9186d718",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_E0ONHqbeVPtYNYu3tmTmzqvF",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Latest implied EBITDA/net debt 838.193M: EV/EBITDA=4.5 -> Target price = R$ 23.64\\\\nLatest implied EBITDA/net debt 838.193M: EV/EBITDA=5.5 -> Target price = R$ 29.53\\\\nLatest implied EBITDA/net debt 838.193M: EV/EBITDA=6.5 -> Target price = R$ 35.42\\\\n---\\\\nEBITDA 1.405bn / net debt 734.8M: EV/EBITDA=4.5 -> Target price = R$ 19.06\\\\nEBITDA 1.405bn / net debt 734.8M: EV/EBITDA=5.5 -> Target price = R$ 23.86\\\\nEBITDA 1.405bn / net debt 734.8M: EV/EBITDA=6.5 -> Target price = R$ 28.65\\\\n---\\\\nEBITDA 1.282bn / net debt 1.3155bn (post debentures) - earlier conservative: EV/EBITDA=4.5 -> Target price = R$ 15.19\\\\nEBITDA 1.282bn / net debt 1.3155bn (post debentures) - earlier conservative: EV/EBITDA=5.5 -> Target price = R$ 19.57\\\\nEBITDA 1.282bn / net debt 1.3155bn (post debentures) - earlier conservative: EV/EBITDA=6.5 -> Target price = R$ 23.94\\\\n---\\\\nEBITDA 1.282bn / net debt 1.7255bn (post debentures + JCP): EV/EBITDA=4.5 -> Target price = R$ 13.80\\\\nEBITDA 1.282bn / net debt 1.7255bn (post debentures + JCP): EV/EBITDA=5.5 -> Target price = R$ 18.17\\\\nEBITDA 1.282bn / net debt 1.7255bn (post debentures + JCP): EV/EBITDA=6.5 -> Target price = R$ 22.54\\\\n---\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_06a8b6e8cb80bae20069ddf83603708194a32810830668bb86",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"shares = 293112130\\nprice_target = 22.96\\nmarket_cap_target = shares * price_target\\nnet_debt_proforma = 998200000.0\\nEV_target = market_cap_target + net_debt_proforma\\nimplied_ebitda = EV_target / 5.5\\nprint(f\\\"market_cap_target: {market_cap_target:,.0f}\\\")\\nprint(f\\\"EV_target: {EV_target:,.0f}\\\")\\nprint(f\\\"Implied EBITDA from EV_target/5.5: {implied_ebitda:,.0f}\\\")\\nprint(f\\\"Implied EBITDA approx: {implied_ebitda/1e6:.1f} M BRL\\\")\\n\"} }",
+            "call_id": "call_k6rth8M6fyO6SL7FUotmPcKI",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_06a8b6e8cb80bae20069ddf848bcd08194addddd1e645696ac",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_k6rth8M6fyO6SL7FUotmPcKI",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'market_cap_target: 6,729,854,505\\\\nEV_target: 7,728,054,505\\\\nImplied EBITDA from EV_target/5.5: 1,405,100,819\\\\nImplied EBITDA approx: 1405.1 M BRL\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_06a8b6e8cb80bae20069ddf84f99dc8194a8046c2e33dd5af4",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"shares = 293112130\\nebitda = 1405100819.0  # as calculated\\nnet_debt = 998200000.0\\nfor m in [4.5,5.5,6.5]:\\n    ev = ebitda * m\\n    mcap = ev - net_debt\\n    price = mcap / shares\\n    print(f\\\"EV/EBITDA={m}: price = R$ {price:.2f}\\\")\\n\\n# Also compute upside from current price 14.7\\ncurrent_price = 14.7\\nprice_base = (ebitda * 5.5 - net_debt) / shares\\nupside = (price_base / current_price - 1) * 100\\nprint(f\\\"Base case target {price_base:.2f} -> upside = {upside:.1f}%\\\")\\n\\n# show net debt / ebitda\\nprint(f\\\"Net debt / EBITDA = {net_debt / ebitda:.2f}x\\\")\\nprint(f\\\"Current P/L = {current_price / 1.8947:.2f}\\\")\\nprint(f\\\"Current P/VP = {current_price / 15.238981:.2f}\\\")\\n\\n# Print results in JSON\\nimport json\\nprint(json.dumps({'ebitda': ebitda, 'net_debt': net_debt}))\\n\"} }",
+            "call_id": "call_qs6HfegQOu6ADI6fnFocziB6",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_06a8b6e8cb80bae20069ddf852b4008194b3cfa44d28546da3",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_qs6HfegQOu6ADI6fnFocziB6",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'EV/EBITDA=4.5: price = R$ 18.17\\\\nEV/EBITDA=5.5: price = R$ 22.96\\\\nEV/EBITDA=6.5: price = R$ 27.75\\\\nBase case target 22.96 -> upside = 56.2%\\\\nNet debt / EBITDA = 0.71x\\\\nCurrent P/L = 7.76\\\\nCurrent P/VP = 0.96\\\\n{\"ebitda\": 1405100819.0, \"net_debt\": 998200000.0}\\\\n\\'\\nStdErr:\\nb\\'\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_06a8b6e8cb80bae20069ddf85734b081949d8d53124c341a0e",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_06a8b6e8cb80bae20069ddf86369088194a126d5cec02f0d0c",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"recommendation\":\"Comprar\",\"justification\":\"Resumo executivo (data: 01/07/2025)\\nRecomenda\u00e7\u00e3o: Comprar (horizonte ~12 meses).\\nMotivo principal: a a\u00e7\u00e3o negocia com m\u00faltiplos deprimidos enquanto mant\u00e9m ativos com alta optionality (2P certificadas), margens elevadas e gera\u00e7\u00e3o operacional consistente. Ao pre\u00e7o atual (R$14,70) h\u00e1 rela\u00e7\u00e3o risco/retorno atraente, desde que o investidor monitore a evolu\u00e7\u00e3o do plano de financiamento do CAPEX 2P e o uso dos recursos captados.\\n\\nPontos quantitativos chave (dados processados):\\n- Cota\u00e7\u00e3o: R$14,70\\n- A\u00e7\u00f5es em circula\u00e7\u00e3o estimadas: 293.112.130\\n- Market cap \u2248 R$4,309M\\n- D\u00edvida l\u00edquida (balan\u00e7o 31/03/2025 + eventos pr\u00f3\u2011forma): considerar pr\u00f3\u2011forma \u2248 R$998,2M (inclui JCP pago R$263,4M)\\n- Indicadores: P/L \u2248 7,8x; P/VP \u2248 0,96x; EV/EBITDA corrente \u2248 3,0x; Net debt / EBITDA (pr\u00f3\u2011forma) \u2248 0,7x; ROE \u2248 12,4%; Margens operacionais robustas.\\n\\nFatores qualitativos relevantes\\n- Positivos: certifica\u00e7\u00e3o NSAI das reservas (2P = 183,8 MMBOE) aumenta visibilidade de NAV; aquisi\u00e7\u00e3o 50% do midstream (US$65M, sujeito a CADE) e offtake contratual (at\u00e9 150 Mm\u00b3/d) melhoram previsibilidade de receita e escoamento; reprofilamento do passivo via deb\u00eantures reduz risco de rollover.\\n- Negativos / riscos: CAPEX agregado elevado para monetizar 2P (US$916,3M em 2025\u20132033); pagamento de JCP (R$263,4M) e aquisi\u00e7\u00f5es elevam press\u00e3o sobre caixa; necessidade de financiamento (farm\u2011out, project finance ou d\u00edvida direcionada) pode implicar alavancagem adicional ou dilui\u00e7\u00e3o; epis\u00f3dio regulat\u00f3rio em Cassarongongo mostrou risco operacional, ainda que tenha sido normalizado.\\n\\nValuation e c\u00e1lculo do pre\u00e7o\u2011alvo (metodologia principal: EV / EBITDA \u2014 base case conservador/reasonable)\\n- Premissas base adotadas:\\n  \u2022 EBITDA LTM utilizado (consistente com an\u00e1lises internas recentes) \u2248 R$1.405M\\n  \u2022 D\u00edvida l\u00edquida pr\u00f3\u2011forma \u2248 R$998,2M (inclui JCP pago)\\n  \u2022 M\u00faltiplo alvo (re\u2011rating moderado): EV/EBITDA = 5,5x\\n- C\u00e1lculo:\\n  \u2022 EV alvo = 5,5 \u00d7 1.405,1 = \u2248 R$7.728M\\n  \u2022 Market cap alvo = EV alvo \u2212 D\u00edvida l\u00edquida pr\u00f3\u2011forma \u2248 R$6.730M\\n  \u2022 Pre\u00e7o\u2011alvo = Market cap alvo / a\u00e7\u00f5es \u2248 R$22,96\\n- Sensibilidade:\\n  \u2022 EV/EBITDA = 4,5 \u2192 Pre\u00e7o \u2248 R$18,17 (cen\u00e1rio conservador)\\n  \u2022 EV/EBITDA = 5,5 \u2192 Pre\u00e7o \u2248 R$22,96 (base case \u2014 adotado)\\n  \u2022 EV/EBITDA = 6,5 \u2192 Pre\u00e7o \u2248 R$27,75 (cen\u00e1rio otimista)\\n- Upside impl\u00edcito (vs R$14,70): \u2248 +56% (base case).\\n\\nRacional conciso\\n- A combina\u00e7\u00e3o de valuation descontado (P/L < 8; P/VP < 1; EV/EBITDA muito baixo), reservas certificadas e receita contratada no midstream justifica posi\u00e7\u00e3o compradora. A alavancagem pr\u00f3\u2011forma permanece em patamar administr\u00e1vel sob cen\u00e1rios m\u00e9dios; portanto, o potencial de re\u2011rating com materializa\u00e7\u00e3o de catalisadores (farm\u2011out, uso das deb\u00eantures em ativos geradores de caixa, execu\u00e7\u00e3o do midstream) \u00e9 relevante.\\n\\nRiscos e gatilhos de monitoramento\\n- Reduzir / rever para Vender: (i) necessidade de financiamento dilutivo material (emiss\u00e3o de a\u00e7\u00f5es) ou d\u00edvida l\u00edquida pr\u00f3\u2011forma subir >R$1,5\u20132,0 bi sem plano de servi\u00e7o; (ii) EBITDA LTM cair >20% de forma sustentada; (iii) eventos regulat\u00f3rios/operacionais que impactem produ\u00e7\u00e3o de forma continuada.\\n- Refor\u00e7ar / Comprar mais: (i) an\u00fancio de financiamento n\u00e3o\u2011dilutivo (farm\u2011out/parceiro) cobrindo parcela relevante do CAPEX 2P; (ii) uso transparente dos recursos das deb\u00eantures em ativos geradores de caixa; (iii) manuten\u00e7\u00e3o/eleva\u00e7\u00e3o do EBITDA nos pr\u00f3ximos trimestres.\\n\\nExecu\u00e7\u00e3o recomendada\\n- Montagem por tranches (posi\u00e7\u00e3o inicial agora; complementos em retra\u00e7\u00f5es ou na confirma\u00e7\u00e3o de catalisadores). Horizonte de realiza\u00e7\u00e3o: ~12 meses, pre\u00e7o\u2011alvo R$22,96.\\n\\nObserva\u00e7\u00e3o final\\nA recomenda\u00e7\u00e3o \u00e9 condicionada ao acompanhamento pr\u00f3ximo dos desdobramentos sobre o financiamento do CAPEX 2P, o fechamento da opera\u00e7\u00e3o midstream (CADE) e a execu\u00e7\u00e3o operacional. Em termos de risco/retorno no pre\u00e7o atual, a tese de compra \u00e9 justificada, por\u00e9m depende da evolu\u00e7\u00e3o favor\u00e1vel do plano de capital da companhia.\",\"target_price\":22.96}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 135.58411526679993,
+    "output": {
+        "recommendation": "Comprar",
+        "justification": "Resumo executivo (data: 01/07/2025)\nRecomenda\u00e7\u00e3o: Comprar (horizonte ~12 meses).\nMotivo principal: a a\u00e7\u00e3o negocia com m\u00faltiplos deprimidos enquanto mant\u00e9m ativos com alta optionality (2P certificadas), margens elevadas e gera\u00e7\u00e3o operacional consistente. Ao pre\u00e7o atual (R$14,70) h\u00e1 rela\u00e7\u00e3o risco/retorno atraente, desde que o investidor monitore a evolu\u00e7\u00e3o do plano de financiamento do CAPEX 2P e o uso dos recursos captados.\n\nPontos quantitativos chave (dados processados):\n- Cota\u00e7\u00e3o: R$14,70\n- A\u00e7\u00f5es em circula\u00e7\u00e3o estimadas: 293.112.130\n- Market cap \u2248 R$4,309M\n- D\u00edvida l\u00edquida (balan\u00e7o 31/03/2025 + eventos pr\u00f3\u2011forma): considerar pr\u00f3\u2011forma \u2248 R$998,2M (inclui JCP pago R$263,4M)\n- Indicadores: P/L \u2248 7,8x; P/VP \u2248 0,96x; EV/EBITDA corrente \u2248 3,0x; Net debt / EBITDA (pr\u00f3\u2011forma) \u2248 0,7x; ROE \u2248 12,4%; Margens operacionais robustas.\n\nFatores qualitativos relevantes\n- Positivos: certifica\u00e7\u00e3o NSAI das reservas (2P = 183,8 MMBOE) aumenta visibilidade de NAV; aquisi\u00e7\u00e3o 50% do midstream (US$65M, sujeito a CADE) e offtake contratual (at\u00e9 150 Mm\u00b3/d) melhoram previsibilidade de receita e escoamento; reprofilamento do passivo via deb\u00eantures reduz risco de rollover.\n- Negativos / riscos: CAPEX agregado elevado para monetizar 2P (US$916,3M em 2025\u20132033); pagamento de JCP (R$263,4M) e aquisi\u00e7\u00f5es elevam press\u00e3o sobre caixa; necessidade de financiamento (farm\u2011out, project finance ou d\u00edvida direcionada) pode implicar alavancagem adicional ou dilui\u00e7\u00e3o; epis\u00f3dio regulat\u00f3rio em Cassarongongo mostrou risco operacional, ainda que tenha sido normalizado.\n\nValuation e c\u00e1lculo do pre\u00e7o\u2011alvo (metodologia principal: EV / EBITDA \u2014 base case conservador/reasonable)\n- Premissas base adotadas:\n  \u2022 EBITDA LTM utilizado (consistente com an\u00e1lises internas recentes) \u2248 R$1.405M\n  \u2022 D\u00edvida l\u00edquida pr\u00f3\u2011forma \u2248 R$998,2M (inclui JCP pago)\n  \u2022 M\u00faltiplo alvo (re\u2011rating moderado): EV/EBITDA = 5,5x\n- C\u00e1lculo:\n  \u2022 EV alvo = 5,5 \u00d7 1.405,1 = \u2248 R$7.728M\n  \u2022 Market cap alvo = EV alvo \u2212 D\u00edvida l\u00edquida pr\u00f3\u2011forma \u2248 R$6.730M\n  \u2022 Pre\u00e7o\u2011alvo = Market cap alvo / a\u00e7\u00f5es \u2248 R$22,96\n- Sensibilidade:\n  \u2022 EV/EBITDA = 4,5 \u2192 Pre\u00e7o \u2248 R$18,17 (cen\u00e1rio conservador)\n  \u2022 EV/EBITDA = 5,5 \u2192 Pre\u00e7o \u2248 R$22,96 (base case \u2014 adotado)\n  \u2022 EV/EBITDA = 6,5 \u2192 Pre\u00e7o \u2248 R$27,75 (cen\u00e1rio otimista)\n- Upside impl\u00edcito (vs R$14,70): \u2248 +56% (base case).\n\nRacional conciso\n- A combina\u00e7\u00e3o de valuation descontado (P/L < 8; P/VP < 1; EV/EBITDA muito baixo), reservas certificadas e receita contratada no midstream justifica posi\u00e7\u00e3o compradora. A alavancagem pr\u00f3\u2011forma permanece em patamar administr\u00e1vel sob cen\u00e1rios m\u00e9dios; portanto, o potencial de re\u2011rating com materializa\u00e7\u00e3o de catalisadores (farm\u2011out, uso das deb\u00eantures em ativos geradores de caixa, execu\u00e7\u00e3o do midstream) \u00e9 relevante.\n\nRiscos e gatilhos de monitoramento\n- Reduzir / rever para Vender: (i) necessidade de financiamento dilutivo material (emiss\u00e3o de a\u00e7\u00f5es) ou d\u00edvida l\u00edquida pr\u00f3\u2011forma subir >R$1,5\u20132,0 bi sem plano de servi\u00e7o; (ii) EBITDA LTM cair >20% de forma sustentada; (iii) eventos regulat\u00f3rios/operacionais que impactem produ\u00e7\u00e3o de forma continuada.\n- Refor\u00e7ar / Comprar mais: (i) an\u00fancio de financiamento n\u00e3o\u2011dilutivo (farm\u2011out/parceiro) cobrindo parcela relevante do CAPEX 2P; (ii) uso transparente dos recursos das deb\u00eantures em ativos geradores de caixa; (iii) manuten\u00e7\u00e3o/eleva\u00e7\u00e3o do EBITDA nos pr\u00f3ximos trimestres.\n\nExecu\u00e7\u00e3o recomendada\n- Montagem por tranches (posi\u00e7\u00e3o inicial agora; complementos em retra\u00e7\u00f5es ou na confirma\u00e7\u00e3o de catalisadores). Horizonte de realiza\u00e7\u00e3o: ~12 meses, pre\u00e7o\u2011alvo R$22,96.\n\nObserva\u00e7\u00e3o final\nA recomenda\u00e7\u00e3o \u00e9 condicionada ao acompanhamento pr\u00f3ximo dos desdobramentos sobre o financiamento do CAPEX 2P, o fechamento da opera\u00e7\u00e3o midstream (CADE) e a execu\u00e7\u00e3o operacional. Em termos de risco/retorno no pre\u00e7o atual, a tese de compra \u00e9 justificada, por\u00e9m depende da evolu\u00e7\u00e3o favor\u00e1vel do plano de capital da companhia.",
+        "target_price": 22.96
+    }
+}
