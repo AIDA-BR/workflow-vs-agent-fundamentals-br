@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from src.db import get_stock_daily_info
 from src.db.base_query import ResponseFormat
 from src.experiments import ExperimentMetadata, Intensity, Model
-from src.experiments.manager import fundamental_analyst, manager as financial_manager
+from src.experiments.manager import manager as financial_manager
 from src.experiments.manager.config import STOCKS
 from src.experiments.utils import get_result
 from src.financial_agents.financial_analyst import IndicatorOutput
@@ -39,31 +39,6 @@ def get_last_stock_report_date(date: datetime) -> datetime:
         return datetime(date.year, 6, 30)
 
 
-def _parse_fundamental_analyst_output(result: RunResult, elapsed_time: float) -> dict:
-    """
-    Return a dictionary containing the fundamental analysis indicators and their values.
-
-    Parameters
-    ----------
-    result : RunResult
-        The result of the financial analysis.
-    elapsed_time : float
-        The elapsed time of the analysis.
-
-    Returns
-    -------
-    dict
-        A dictionary containing the fundamental analysis indicators and their values.
-    """
-    fundamental_analysis = get_result(result, elapsed_time)
-
-    fundamental_indicators = {
-        str(f["indicator"]): f["value"]
-        for f in fundamental_analysis.get("output", {}).get("indicators", [])
-    }
-    return fundamental_indicators
-
-
 def _parse_financial_manager_output(
     result: RunResult, analysis_date: str, elapsed_time: float, stock_id: str
 ) -> dict:
@@ -74,21 +49,6 @@ def _parse_financial_manager_output(
 
 
 def _get_daily_price_info(stock_id: str, daily_stock_info: dict, report_date: str) -> dict:
-    """
-    Return a dictionary containing the daily price information of a stock.
-
-    Parameters
-    ----------
-    stock_id : str
-        The ID of the stock.
-    daily_stock_info : dict
-        A dictionary containing the daily price information of the stock.
-
-    Returns
-    -------
-    dict
-        A dictionary containing the daily price information of the stock.
-    """
     price_info = {}
     price_info["ACAO"] = stock_id
     price_info["DATA_DO_PREGAO"] = daily_stock_info["DATA_DO_PREGAO"]
@@ -138,11 +98,11 @@ def _save_results(
 
 def run():
     manager_decisions = []
-    fundamental_analyses = []
+    price_analyses = []
 
     experiment = ExperimentMetadata(
         model=Model.GPT_5_MINI,
-        write_folder="results/manager",
+        write_folder="results/baseline",
         max_turns=15,
         structured_output=IndicatorOutput.model_json_schema(),
         reasoning=Intensity.MEDIUM,
@@ -152,7 +112,7 @@ def run():
 
     if os.path.exists(f"{experiment.write_folder}/results_sample.json"):
         with open(f"{experiment.write_folder}/results_sample.json") as f:
-            fundamental_analyses = json.load(f)
+            price_analyses = json.load(f)
 
         with open(f"{experiment.write_folder}/decisions_sample.json") as f:
             manager_decisions = json.load(f)
@@ -167,7 +127,7 @@ def run():
                         print(f"Analisando {stock.stock_id} em {analysis_date}")
 
                         if os.path.exists(
-                            f"{experiment.write_folder}/{stock.stock_id}/{analysis_date.strftime('%Y-%m-%d')}_analyst_0.json"
+                            f"{experiment.write_folder}/{stock.stock_id}/{analysis_date.strftime('%Y-%m-%d')}_manager_0.json"
                         ):
                             continue
 
@@ -186,29 +146,6 @@ def run():
                         # Get last quarter reports date (previous 3 months)
                         report_date = get_last_stock_report_date(analysis_date)
 
-                        result = fundamental_analyst.run(
-                            stock=stock,
-                            stock_price=daily_stock_price,
-                            date=report_date,
-                            experiment_metadata=experiment,
-                        )
-
-                        end_time = time.time()
-
-                        _save_results(
-                            write_folder=experiment.write_folder,
-                            stock_id=stock.stock_id,
-                            analysis_date=analysis_date.strftime("%Y-%m-%d"),
-                            agent_role="analyst",
-                            result=result,
-                            elapsed_time=end_time - start_time,
-                            experiment_id=0,
-                        )
-
-                        # Get fundamental indicators
-                        fundamental_indicators = _parse_fundamental_analyst_output(
-                            result, end_time - start_time
-                        )
                         # Get price info
                         price_info = _get_daily_price_info(
                             stock_id=stock.stock_id,
@@ -220,15 +157,14 @@ def run():
                             manager_decisions, stock.stock_id
                         )
 
-                        fundamental_analyses.append(
+                        price_analyses.append(
                             {
-                                **fundamental_indicators,
                                 **price_info,
                                 **last_manager_decision,
                             }
                         )
 
-                        indicators = pd.DataFrame(fundamental_analyses)
+                        indicators = pd.DataFrame(price_analyses)
                         indicators = (
                             indicators[indicators["ACAO"] == stock.stock_id]
                             .sort_values("DATA_DO_PREGAO", ascending=True)
@@ -264,7 +200,7 @@ def run():
                         manager_decisions.append(decision)
 
                         with open(f"{experiment.write_folder}/results_sample.json", "w") as f:
-                            json.dump(fundamental_analyses, f, indent=4)
+                            json.dump(price_analyses, f, indent=4)
 
                         with open(f"{experiment.write_folder}/decisions_sample.json", "w") as f:
                             json.dump(manager_decisions, f, indent=4)
