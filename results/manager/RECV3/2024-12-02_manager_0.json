@@ -1,0 +1,177 @@
+{
+    "usage": {
+        "requests": 10,
+        "input_tokens": 226030,
+        "output_tokens": 14823,
+        "total_tokens": 240853
+    },
+    "steps": [
+        {
+            "id": "rs_090a2b603ccd9bdc0069df3b33e0fc8198bcd253587fcfe3d2",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Calculations for RECV3 valuation based on provided data\\n\\n# Given/assumed values (from provided dataset and previous rows):\\npatrimonio = 4_387_452_000.0  # Patrim. L\u00edq\\nvpa = 14.968511\\n# use net income 12m from prior row (492,428,000)\\nnet_income_12m = 492_428_000.0\\n# price used in the latest quote\\nprice_current = 16.41\\n# some historical row used price 17.71 and net debt 469,728,000 and EV/EBITDA 3.54\\nprice_ref = 17.71\\nnet_debt_ref = 469_728_000.0\\nev_ebitda_ref = 3.54\\n\\n# compute shares outstanding\\nshares = patrimonio / vpa\\n\\n# compute LPA from net income (12m) and shares\\nlpa = net_income_12m / shares\\n\\n# compute market cap at reference price and EV, then infer EBITDA\\nmarket_cap_ref = price_ref * shares\\nev_ref = market_cap_ref + net_debt_ref\\n# infer EBITDA from EV and EV/EBITDA\\nebitda = ev_ref / ev_ebitda_ref\\n\\n# Now valuation approaches\\npe_multiple = 13.0\\npvpa_multiple = 1.6\\nev_ebitda_target = 7.5\\n\\nprice_pe = lpa * pe_multiple\\nprice_pvpa = vpa * pvpa_multiple\\n# use latest known net debt for target calculation if available (from latest row net debt = 1,685,375,000)\\nnet_debt_latest = 1_685_375_000.0\\n\\nev_target = ebitda * ev_ebitda_target\\nmarket_cap_target = ev_target - net_debt_latest\\nprice_ev_ebitda = market_cap_target / shares\\n\\n# weighted price (50% EV/EBITDA, 25% P/VPA, 25% P/E)\\nprice_weighted = 0.5 * price_ev_ebitda + 0.25 * price_pvpa + 0.25 * price_pe\\n\\nshares, lpa, ebitda, price_pe, price_pvpa, price_ev_ebitda, price_weighted, market_cap_target, ev_target, ev_ref, market_cap_ref\\n\"}}",
+            "call_id": "call_KYXgeuiCdNdjx60mA3j2zNoC",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3bc4489881989fa327722b173310",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_KYXgeuiCdNdjx60mA3j2zNoC",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb''\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Print computed values in a readable way\\nshares = patrimonio / vpa\\nlpa = net_income_12m / shares\\nmarket_cap_ref = price_ref * shares\\nev_ref = market_cap_ref + net_debt_ref\\nebitda = ev_ref / ev_ebitda_ref\\n\\nprice_pe = lpa * pe_multiple\\nprice_pvpa = vpa * pvpa_multiple\\n\\nev_target = ebitda * ev_ebitda_target\\nmarket_cap_target = ev_target - net_debt_latest\\nprice_ev_ebitda = market_cap_target / shares\\nprice_weighted = 0.5 * price_ev_ebitda + 0.25 * price_pvpa + 0.25 * price_pe\\n\\nprint(f'shares_outstanding = {shares:,.0f}')\\nprint(f'LPA (EPS) = {lpa:.4f}')\\nprint(f'Implied EBITDA (from ref EV/EBITDA) = {ebitda:,.0f}')\\nprint('---')\\nprint(f'Price (P/E, 13x) = R$ {price_pe:.2f}')\\nprint(f'Price (P/VPA, 1.6x) = R$ {price_pvpa:.2f}')\\nprint(f'Price (EV/EBITDA, 7.5x) = R$ {price_ev_ebitda:.2f}')\\nprint('---')\\nprint(f'Weighted price (50% EV/EBITDA, 25% P/VPA, 25% P/E) = R$ {price_weighted:.2f}')\\nprint('---')\\nprint(f'Ref market cap (price {price_ref}) = R$ {market_cap_ref:,.0f}')\\nprint(f'Ref EV = R$ {ev_ref:,.0f}')\\nprint(f'EV target (7.5x) = R$ {ev_target:,.0f}')\\nprint(f'Market cap target = R$ {market_cap_target:,.0f}')\\n\\n# Also compute sensitivity: if net debt used is the lower ref net_debt_ref\\nmarket_cap_target_lowdebt = ev_target - net_debt_ref\\nprice_ev_ebitda_lowdebt = market_cap_target_lowdebt / shares\\nprint('--- sensitivity using lower net debt (ref net debt = 469,728,000) ---')\\nprint(f'Price (EV/EBITDA) low net debt = R$ {price_ev_ebitda_lowdebt:.2f}')\\n\\n\\n\"} }",
+            "call_id": "call_RiXd4Erkq5yXfkthLFboiBAQ",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3bd101748198aba95deb473a5980",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_RiXd4Erkq5yXfkthLFboiBAQ",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'\\'\\nStdErr:\\nb\\'Traceback (most recent call last):\\\\n  File \"<string>\", line 2, in <module>\\\\n    shares = patrimonio / vpa\\\\n             ^^^^^^^^^^\\\\nNameError: name \\\\\\'patrimonio\\\\\\' is not defined\\\\n\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_090a2b603ccd9bdc0069df3bdc182c819885ae3919888be285",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Single-run calculation with definitions\\npatrimonio = 4_387_452_000.0\\nvpa = 14.968511\\nnet_income_12m = 492_428_000.0\\nprice_ref = 17.71\\nnet_debt_ref = 469_728_000.0\\nev_ebitda_ref = 3.54\\nnet_debt_latest = 1_685_375_000.0\\npe_multiple = 13.0\\npvpa_multiple = 1.6\\nev_ebitda_target = 7.5\\n\\n# derived\\nshares = patrimonio / vpa\\nlpa = net_income_12m / shares\\nmarket_cap_ref = price_ref * shares\\nev_ref = market_cap_ref + net_debt_ref\\nebitda = ev_ref / ev_ebitda_ref\\n\\nprice_pe = lpa * pe_multiple\\nprice_pvpa = vpa * pvpa_multiple\\n\\nev_target = ebitda * ev_ebitda_target\\nmarket_cap_target = ev_target - net_debt_latest\\nprice_ev_ebitda = market_cap_target / shares\\nprice_weighted = 0.5 * price_ev_ebitda + 0.25 * price_pvpa + 0.25 * price_pe\\n\\nprint(f'shares_outstanding = {shares:,.0f}')\\nprint(f'LPA (EPS) = {lpa:.4f}')\\nprint(f'Implied EBITDA (from ref EV/EBITDA) = {ebitda:,.0f}')\\nprint('---')\\nprint(f'Price (P/E, 13x) = R$ {price_pe:.2f}')\\nprint(f'Price (P/VPA, 1.6x) = R$ {price_pvpa:.2f}')\\nprint(f'Price (EV/EBITDA, 7.5x, using latest net debt) = R$ {price_ev_ebitda:.2f}')\\nprint('---')\\nprint(f'Weighted price (50% EV/EBITDA, 25% P/VPA, 25% P/E) = R$ {price_weighted:.2f}')\\nprint('---')\\nprint(f'Ref market cap (price {price_ref}) = R$ {market_cap_ref:,.0f}')\\nprint(f'Ref EV = R$ {ev_ref:,.0f}')\\nprint(f'EV target (7.5x) = R$ {ev_target:,.0f}')\\nprint(f'Market cap target = R$ {market_cap_target:,.0f}')\\n\\n# sensitivity using lower net debt (ref net debt)\\nmarket_cap_target_lowdebt = ev_target - net_debt_ref\\nprice_ev_ebitda_lowdebt = market_cap_target_lowdebt / shares\\nprint('--- sensitivity using lower net debt (ref net debt = 469,728,000) ---')\\nprint(f'Price (EV/EBITDA) low net debt = R$ {price_ev_ebitda_lowdebt:.2f}')\\n\\n\"}}",
+            "call_id": "call_mwP7NYA9mu3GTGJdcmJBWQiN",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3bdd666081989781870bbfb1d689",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_mwP7NYA9mu3GTGJdcmJBWQiN",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'shares_outstanding = 293,112,121\\\\nLPA (EPS) = 1.6800\\\\nImplied EBITDA (from ref EV/EBITDA) = 1,599,080,128\\\\n---\\\\nPrice (P/E, 13x) = R$ 21.84\\\\nPrice (P/VPA, 1.6x) = R$ 23.95\\\\nPrice (EV/EBITDA, 7.5x, using latest net debt) = R$ 35.17\\\\n---\\\\nWeighted price (50% EV/EBITDA, 25% P/VPA, 25% P/E) = R$ 29.03\\\\n---\\\\nRef market cap (price 17.71) = R$ 5,191,015,654\\\\nRef EV = R$ 5,660,743,654\\\\nEV target (7.5x) = R$ 11,993,100,962\\\\nMarket cap target = R$ 10,307,725,962\\\\n--- sensitivity using lower net debt (ref net debt = 469,728,000) ---\\\\nPrice (EV/EBITDA) low net debt = R$ 39.31\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_090a2b603ccd9bdc0069df3bea320c819895ad5955b018c6f5",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# compute additional metrics for inclusion in the report\\nprice_current = 16.41\\nshares = 293_112_121\\nmarket_cap_current = price_current * shares\\npatrimonio = 4_387_452_000.0\\nvpa = 14.968511\\nlpa = 1.68\\n\\ndivida_bruta = 2_096_390_000.0\\n\\n# Latest disponibilities and net debt as in row 179\\ndisponibilidades_latest = 411_015_000.0\\nnet_debt_latest = 1_685_375_000.0\\n\\n# compute ratios\\np_vp = price_current / vpa\\np_l = price_current / lpa\\n\\n# compute EV and EV/EBITDA using implied ebitda\\n# ebitda from prior calc\\nebitda = 1_599_080_128.0\\n\\nev_current = market_cap_current + net_debt_latest\\nev_ebitda_current = ev_current / ebitda\\n\\nnet_debt_to_ebitda = net_debt_latest / ebitda\\ndiv_br_patrim = divida_bruta / patrimonio\\nroe = net_income_12m / patrimonio\\n\\nmarket_cap_current, p_vp, p_l, ev_current, ev_ebitda_current, net_debt_to_ebitda, div_br_patrim, roe\\n\"}}",
+            "call_id": "call_h8YpQSm6c0nFXPUCQp8mR6VN",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3bf969f48198aae16504bde7d772",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_h8YpQSm6c0nFXPUCQp8mR6VN",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'\\'\\nStdErr:\\nb\\'Traceback (most recent call last):\\\\n  File \"<string>\", line 28, in <module>\\\\n    roe = net_income_12m / patrimonio\\\\n          ^^^^^^^^^^^^^^\\\\nNameError: name \\\\\\'net_income_12m\\\\\\' is not defined\\\\n\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"patrimonio = 4_387_452_000.0\\nvpa = 14.968511\\nlpa = 1.68\\nnet_income_12m = 492_428_000.0\\nprice_current = 16.41\\nshares = 293_112_121\\nmarket_cap_current = price_current * shares\\n\\ndivida_bruta = 2_096_390_000.0\\n\\ndisponibilidades_latest = 411_015_000.0\\nnet_debt_latest = 1_685_375_000.0\\n\\nebitda = 1_599_080_128.0\\n\\np_vp = price_current / vpa\\np_l = price_current / lpa\\n\\nev_current = market_cap_current + net_debt_latest\\nev_ebitda_current = ev_current / ebitda\\n\\nnet_debt_to_ebitda = net_debt_latest / ebitda\\ndiv_br_patrim = divida_bruta / patrimonio\\nroe = net_income_12m / patrimonio\\n\\nprint(f'market_cap_current = R$ {market_cap_current:,.0f}')\\nprint(f'P/VP = {p_vp:.3f}')\\nprint(f'P/L = {p_l:.3f}')\\nprint(f'EV = R$ {ev_current:,.0f}')\\nprint(f'EV/EBITDA = {ev_ebitda_current:.2f}')\\nprint(f'Net Debt / EBITDA = {net_debt_to_ebitda:.2f}')\\nprint(f'D\u00edvida bruta / Patrim\u00f4nio = {div_br_patrim:.2f}')\\nprint(f'ROE = {roe:.2%}')\\n\\n\"}}",
+            "call_id": "call_09N9UFle7u1vweMzB2hZQ0Xe",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3c00a6a48198995ea8cbc0558251",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_09N9UFle7u1vweMzB2hZQ0Xe",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'market_cap_current = R$ 4,809,969,906\\\\nP/VP = 1.096\\\\nP/L = 9.768\\\\nEV = R$ 6,495,344,906\\\\nEV/EBITDA = 4.06\\\\nNet Debt / EBITDA = 1.05\\\\nD\\\\xc3\\\\xadvida bruta / Patrim\\\\xc3\\\\xb4nio = 0.48\\\\nROE = 11.22%\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_090a2b603ccd9bdc0069df3c09b7748198a151af94a2612c57",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"price_target = 29.03\\nprice_current = 16.41\\nupside = (price_target/price_current - 1) * 100\\nprice_target, upside\\n\\n\"}}",
+            "call_id": "call_mGZ0DsBc1Hm0mFwo1aYh0phL",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3c113d548198afe5692686ddc6b6",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_mGZ0DsBc1Hm0mFwo1aYh0phL",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb''\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"price_target = 29.03\\nprice_current = 16.41\\nupside = (price_target/price_current - 1) * 100\\nprint(f'Upside = {upside:.1f}%')\\n\"}}",
+            "call_id": "call_5AqQi1luYnQa8koB9G59gIGq",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3c1352e08198b8f24790065b193f",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_5AqQi1luYnQa8koB9G59gIGq",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Upside = 76.9%\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_090a2b603ccd9bdc0069df3c1632148198b12e577bb2c3818f",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"revenue_12m = 3_141_978_000.0\\nebit_12m = 937_182_000.0\\nnet_income_12m = 492_428_000.0\\n\\nmarg_ebit = ebit_12m / revenue_12m\\nmarg_liq = net_income_12m / revenue_12m\\nmarg_ebit, marg_liq\\n\\n\\n\"}}",
+            "call_id": "call_9V6kDoEuLeE6E12UM8yhkOJL",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3c1963b48198a253166412205058",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_9V6kDoEuLeE6E12UM8yhkOJL",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb''\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"revenue_12m = 3_141_978_000.0\\nebit_12m = 937_182_000.0\\nnet_income_12m = 492_428_000.0\\nmarg_ebit = ebit_12m / revenue_12m\\nmarg_liq = net_income_12m / revenue_12m\\nprint(f'Margem EBIT = {marg_ebit:.2%}')\\nprint(f'Margem L\u00edquida = {marg_liq:.2%}')\\n\\n\"}}",
+            "call_id": "call_kCV20bjWhm9jICL0psI2UJKi",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_090a2b603ccd9bdc0069df3c1de6d081988c85738398020902",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_kCV20bjWhm9jICL0psI2UJKi",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Margem EBIT = 29.83%\\\\nMargem L\\\\xc3\\\\xadquida = 15.67%\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_090a2b603ccd9bdc0069df3c2153248198b8dbccbad71eaec4",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_090a2b603ccd9bdc0069df3c3943a0819888b28a9c6b5f20cf",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"recommendation\":\"Comprar\",\"justification\":\"Decis\u00e3o (data: 2024-12-02, cota\u00e7\u00e3o: R$16,41) \u2014 Recomenda\u00e7\u00e3o: Comprar (horizonte ~12 meses).\\n\\nSum\u00e1rio dos fundamentos (base: balan\u00e7o processado at\u00e9 2024-06-30):\\n- Receita l\u00edquida 12m \u2248 R$3,142 bil; EBIT 12m \u2248 R$937,2 MM (margem EBIT \u2248 29,8%); Lucro l\u00edquido 12m \u2248 R$492,4 MM (margem l\u00edquida \u2248 15,7%).\\n- LPA \u2248 R$1,68; VPA \u2248 R$14,97; ROE \u2248 11,2%; Liquidez corrente \u2248 1,98.\\n- Estrutura financeira: D\u00edvida bruta \u2248 R$2,096 MM; Disponibilidades (\u00faltimo processamento) \u2248 R$411,0 MM \u2192 D\u00edvida l\u00edquida \u2248 R$1,685 MM (Net Debt / EBITDA \u2248 1,05). Observou\u2011se redu\u00e7\u00e3o de disponibilidades vs processamentos anteriores \u2014 risco a ser monitorado.\\n\\nValuation e pre\u00e7o\u2011alvo (metodologia): cruzei tr\u00eas abordagens e dei maior peso ao fluxo operacional (EV/EBITDA):\\n- P/E (13x) \u2192 pre\u00e7o \u2248 R$21,84\\n- P/VPA (1,6x) \u2192 pre\u00e7o \u2248 R$23,95\\n- EV/EBITDA (7,5x alvo, EBITDA impl\u00edcito \u2248 R$1,599 MM) \u2192 pre\u00e7o \u2248 R$35,17\\n- Pondera\u00e7\u00e3o: 50% EV/EBITDA, 25% P/VPA, 25% P/E \u2192 Pre\u00e7o\u2011alvo ponderado = R$29,03 (horizonte ~12 meses). Upside impl\u00edcito \u2248 +76,9% vs cota\u00e7\u00e3o R$16,41.\\n\\nRacional da recomenda\u00e7\u00e3o:\\n- Margens operacionais elevadas e gera\u00e7\u00e3o de caixa recorrente sustentam capacidade de lucro e cobertura de servi\u00e7o da d\u00edvida.\\n- Valor patrimonial relevante (VPA \u2248 R$14,97) e m\u00faltiplos atuais (P/L \u2248 9,8; P/VP \u2248 1,10; EV/EBITDA \u2248 4,1) indicam desconto em rela\u00e7\u00e3o aos m\u00faltiplos-alvo justific\u00e1veis pelo perfil operacional.\\n- Mesmo considerando a eleva\u00e7\u00e3o da d\u00edvida l\u00edquida observada no processamento mais recente, a rela\u00e7\u00e3o d\u00edvida/EBITDA permanece manej\u00e1vel e h\u00e1 espa\u00e7o para re\u2011rating se a gera\u00e7\u00e3o de caixa se mantiver.\\n\\nRiscos principais:\\n- Exposi\u00e7\u00e3o direta a pre\u00e7os de petr\u00f3leo e g\u00e1s e poss\u00edveis impactos regulat\u00f3rios/contratuais sobre concess\u00f5es;\\n- Redu\u00e7\u00e3o de disponibilidades e aumento da d\u00edvida l\u00edquida (observado no processamento mais recente) \u2014 confirmar a natureza do uso de caixa (capex, aquisi\u00e7\u00f5es, dividendos extraordin\u00e1rios, amortiza\u00e7\u00f5es);\\n- Volatilidade de curto prazo que pode atrasar realiza\u00e7\u00e3o do upside e compress\u00e3o de m\u00faltiplos em cen\u00e1rio macro adverso.\\n\\nT\u00e1tica recomendada:\\n- Compra com horizonte ~12 meses; entrada escalonada para mitigar risco de timing.\\n- Monitorar trimestralmente: divulga\u00e7\u00e3o de resultados (EBITDA, lucro, varia\u00e7\u00e3o de disponibilidades), evolu\u00e7\u00e3o da d\u00edvida l\u00edquida, capex e decis\u00f5es de distribui\u00e7\u00e3o de caixa, al\u00e9m de pre\u00e7os de commodities e not\u00edcias regulat\u00f3rias.\\n\\nConclus\u00e3o: fundamentos operacionais robustos e m\u00faltiplos atualmente descontados sustentam recomenda\u00e7\u00e3o de Compra. Pre\u00e7o\u2011alvo de realiza\u00e7\u00e3o (12 meses): R$29,03.\",\"target_price\":29.03}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 446.9252498149872,
+    "output": {
+        "recommendation": "Comprar",
+        "justification": "Decis\u00e3o (data: 2024-12-02, cota\u00e7\u00e3o: R$16,41) \u2014 Recomenda\u00e7\u00e3o: Comprar (horizonte ~12 meses).\n\nSum\u00e1rio dos fundamentos (base: balan\u00e7o processado at\u00e9 2024-06-30):\n- Receita l\u00edquida 12m \u2248 R$3,142 bil; EBIT 12m \u2248 R$937,2 MM (margem EBIT \u2248 29,8%); Lucro l\u00edquido 12m \u2248 R$492,4 MM (margem l\u00edquida \u2248 15,7%).\n- LPA \u2248 R$1,68; VPA \u2248 R$14,97; ROE \u2248 11,2%; Liquidez corrente \u2248 1,98.\n- Estrutura financeira: D\u00edvida bruta \u2248 R$2,096 MM; Disponibilidades (\u00faltimo processamento) \u2248 R$411,0 MM \u2192 D\u00edvida l\u00edquida \u2248 R$1,685 MM (Net Debt / EBITDA \u2248 1,05). Observou\u2011se redu\u00e7\u00e3o de disponibilidades vs processamentos anteriores \u2014 risco a ser monitorado.\n\nValuation e pre\u00e7o\u2011alvo (metodologia): cruzei tr\u00eas abordagens e dei maior peso ao fluxo operacional (EV/EBITDA):\n- P/E (13x) \u2192 pre\u00e7o \u2248 R$21,84\n- P/VPA (1,6x) \u2192 pre\u00e7o \u2248 R$23,95\n- EV/EBITDA (7,5x alvo, EBITDA impl\u00edcito \u2248 R$1,599 MM) \u2192 pre\u00e7o \u2248 R$35,17\n- Pondera\u00e7\u00e3o: 50% EV/EBITDA, 25% P/VPA, 25% P/E \u2192 Pre\u00e7o\u2011alvo ponderado = R$29,03 (horizonte ~12 meses). Upside impl\u00edcito \u2248 +76,9% vs cota\u00e7\u00e3o R$16,41.\n\nRacional da recomenda\u00e7\u00e3o:\n- Margens operacionais elevadas e gera\u00e7\u00e3o de caixa recorrente sustentam capacidade de lucro e cobertura de servi\u00e7o da d\u00edvida.\n- Valor patrimonial relevante (VPA \u2248 R$14,97) e m\u00faltiplos atuais (P/L \u2248 9,8; P/VP \u2248 1,10; EV/EBITDA \u2248 4,1) indicam desconto em rela\u00e7\u00e3o aos m\u00faltiplos-alvo justific\u00e1veis pelo perfil operacional.\n- Mesmo considerando a eleva\u00e7\u00e3o da d\u00edvida l\u00edquida observada no processamento mais recente, a rela\u00e7\u00e3o d\u00edvida/EBITDA permanece manej\u00e1vel e h\u00e1 espa\u00e7o para re\u2011rating se a gera\u00e7\u00e3o de caixa se mantiver.\n\nRiscos principais:\n- Exposi\u00e7\u00e3o direta a pre\u00e7os de petr\u00f3leo e g\u00e1s e poss\u00edveis impactos regulat\u00f3rios/contratuais sobre concess\u00f5es;\n- Redu\u00e7\u00e3o de disponibilidades e aumento da d\u00edvida l\u00edquida (observado no processamento mais recente) \u2014 confirmar a natureza do uso de caixa (capex, aquisi\u00e7\u00f5es, dividendos extraordin\u00e1rios, amortiza\u00e7\u00f5es);\n- Volatilidade de curto prazo que pode atrasar realiza\u00e7\u00e3o do upside e compress\u00e3o de m\u00faltiplos em cen\u00e1rio macro adverso.\n\nT\u00e1tica recomendada:\n- Compra com horizonte ~12 meses; entrada escalonada para mitigar risco de timing.\n- Monitorar trimestralmente: divulga\u00e7\u00e3o de resultados (EBITDA, lucro, varia\u00e7\u00e3o de disponibilidades), evolu\u00e7\u00e3o da d\u00edvida l\u00edquida, capex e decis\u00f5es de distribui\u00e7\u00e3o de caixa, al\u00e9m de pre\u00e7os de commodities e not\u00edcias regulat\u00f3rias.\n\nConclus\u00e3o: fundamentos operacionais robustos e m\u00faltiplos atualmente descontados sustentam recomenda\u00e7\u00e3o de Compra. Pre\u00e7o\u2011alvo de realiza\u00e7\u00e3o (12 meses): R$29,03.",
+        "target_price": 29.03
+    }
+}
