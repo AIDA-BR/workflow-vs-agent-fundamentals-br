@@ -1,0 +1,198 @@
+{
+    "usage": {
+        "requests": 3,
+        "input_tokens": 213880,
+        "output_tokens": 9747,
+        "total_tokens": 223627
+    },
+    "steps": [
+        {
+            "id": "rs_0fb0533a69a994c10069def99757a08195af9299322222b42e",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Calculations for VALE S.A. indicators as of 2024-03-31\\nfrom decimal import Decimal\\n# Input data from prompt (numbers in BRL)\\n# Shares\\nissued = 4539007000\\ntreasury = 239153000\\noutstanding = issued - treasury\\nprice = Decimal('63.14')\\n\\n# Assets & liabilities\\nativo_total = Decimal('458033000000.0')\\nativo_circ = Decimal('87571000000.0')\\ncaixa = Decimal('18935000000.0')\\naplic_fin = Decimal('221000000.0')\\ndisponibilidades = caixa + aplic_fin\\n\\npassivo_circ = Decimal('78325000000.0')\\nfornecedores = Decimal('27710000000.0')\\n\\n# Debt (short + long)\\ndeb_short = Decimal('7387000000.0')\\ndeb_long = Decimal('65925000000.0')\\ndiv_bruta = deb_short + deb_long\\n\\nequity_consolidado = Decimal('194836000000.0')\\nequity_parent = Decimal('187211000000.0')\\n\\n# Income (quarterly and annual values)\\n# Quarterly (Q1 2024)\\nrevenue_q1_2024 = Decimal('41891000000.0')  # 3.01 \u00daLTIMO\\ncogs_q1_2024 = Decimal('-26594000000.0')\\ngross_q1_2024 = Decimal('15297000000.0')\\nebit_q1_2024 = Decimal('12726000000.0')  # 3.05 \u00daLTIMO\\nnetinc_q1_2024 = Decimal('8332000000.0')  # 4.01 \u00daLTIMO\\n\\n# Quarterly same period previous year (Q1 2023)\\nrevenue_q1_2023 = Decimal('43841000000.0')\\ncogs_q1_2023 = Decimal('-25724000000.0')\\ngross_q1_2023 = Decimal('18117000000.0')\\nebit_q1_2023 = Decimal('14671000000.0')\\nnetinc_q1_2023 = Decimal('9734000000.0')\\n\\n# Annual (2023)\\nrevenue_2023 = Decimal('208066000000.0')  # 3.01 \u00daLTIMO annual\\ngross_2023 = Decimal('88050000000.0')    # 3.03 \u00daLTIMO annual\\nebit_2023 = Decimal('65272000000.0')\\nnetinc_2023 = Decimal('40554000000.0')\\n\\n# Depreciation & amortization (annual and quarterly)\\nda_2023 = Decimal('15300000000.0')  # 7.04.01 \u00daLTIMO annual (positive magnitude)\\nda_q1_2024 = Decimal('3540000000.0')  # 7.04.01 \u00daLTIMO (given as -3540000000 in file but magnitude)\\nda_q1_2023 = Decimal('3409000000.0')\\n\\n# Compute market cap\\nmarket_cap = price * Decimal(outstanding)\\n\\n# TTM (12 months) calculations using LTM = annual + (current quarter - same quarter prior year)\\nrevenue_ttm = revenue_2023 + revenue_q1_2024 - revenue_q1_2023\\nebit_ttm = ebit_2023 + ebit_q1_2024 - ebit_q1_2023\\ngross_ttm = gross_2023 + gross_q1_2024 - gross_q1_2023\\nnetinc_ttm = netinc_2023 + netinc_q1_2024 - netinc_q1_2023\\n\\nda_ttm = da_2023 + da_q1_2024 - da_q1_2023\\nebitda_ttm = ebit_ttm + da_ttm\\n\\n# Other metrics\\ncapital_de_giro = ativo_circ - passivo_circ\\n\\n# EV = market_cap + net debt (divida liquida)\\ndiv_liq = div_bruta - disponibilidades\\nenterprise_value = market_cap + div_liq\\n\\n# Per-share metrics\\nvpa = equity_parent / Decimal(outstanding)\\nlpa = ( (netinc_2023 + netinc_q1_2024 - netinc_q1_2023) * (Decimal('1.0') * Decimal('1.0')) ) / Decimal(outstanding)\\n# For LPA it's common to use net income attributable to parent; using netinc_ttm approximated by consolidated netinc_ttm\\n# But we have parent attributable annual and quarter: use 3.11.01 values\\nparent_annual = Decimal('39940000000.0')\\nparent_q1_2024 = Decimal('8291000000.0')\\nparent_q1_2023 = Decimal('9521000000.0')\\nparent_ttm = parent_annual + parent_q1_2024 - parent_q1_2023\\nlpa_parent = parent_ttm / Decimal(outstanding)\\n\\n# P/E using LPA from parent\\np_over_l = price / lpa_parent if lpa_parent != 0 else None\\n\\n# P/VP = price / vpa\\np_over_vp = price / vpa\\n\\n# P/EBIT = market_cap / ebit_ttm\\np_over_ebit = market_cap / ebit_ttm\\n\\n# PSR = market_cap / revenue_ttm\\npsr = market_cap / revenue_ttm\\n\\n# P/Ativos = market_cap / ativo_total\\np_over_ativos = market_cap / ativo_total\\n\\n# P/Cap. Giro = market_cap / capital_de_giro\\np_over_cap_giro = market_cap / capital_de_giro\\n\\n# P/Ativ Circ Liq: price divided by ativo circulante liquido per share. Ativo circulante liquido = ativo circulante - passivo circulante\\nativ_circ_liq = capital_de_giro\\np_over_ativ_circ_liq = market_cap / ativ_circ_liq\\n\\n# EV / EBITDA and EV / EBIT\\nev_over_ebitda = enterprise_value / ebitda_ttm\\nev_over_ebit = enterprise_value / ebit_ttm\\n\\n# Margins (percent)\\nmarg_bruta = (gross_ttm / revenue_ttm) * 100\\nmarg_ebit = (ebit_ttm / revenue_ttm) * 100\\nmarg_liq = (netinc_ttm / revenue_ttm) * 100\\n\\n# EBIT / Ativo percent\\nebit_over_ativo = (ebit_ttm / ativo_total) * 100\\n\\n# ROIC = EBIT / (Ativo - Fornecedores - Caixa) per developer\\nroic = (ebit_ttm / (ativo_total - fornecedores - caixa)) * 100\\n\\n# ROE = netinc_ttm / equity_consolidado *100\\nroe = (netinc_ttm / equity_consolidado) * 100\\n\\n# Liquidez corrente\\nliquidez_corr = ativo_circ / passivo_circ\\n\\n# Div Br/ Patrim\\ndivbr_over_patrim = div_bruta / equity_consolidado\\n\\n# Giro Ativos = revenue_ttm / ativo_total\\ngiro_ativos = revenue_ttm / ativo_total\\n\\n# Prepare outputs rounding appropriately\\nfrom math import isfinite\\n\\ndef rn(x, digits=2):\\n    return float(Decimal(x).quantize(Decimal(10) ** -digits))\\n\\nresults = {\\n    'Ativo': float(ativo_total),\\n    'Disponibilidades': float(disponibilidades),\\n    'Ativo Circulante': float(ativo_circ),\\n    'D\u00edv. Bruta': float(div_bruta),\\n    'D\u00edv. L\u00edquida': float(div_liq),\\n    'Patrim. L\u00edq': float(equity_consolidado),\\n    'Receita L\\u0000edquida (12 meses)': float(revenue_ttm),\\n    'EBIT (12 meses)': float(ebit_ttm),\\n    'Lucro L\\u0000edquido (12 meses)': float(netinc_ttm),\\n    'Receita L\\u0000edquida (3 meses)': float(revenue_q1_2024),\\n    'EBIT (3 meses)': float(ebit_q1_2024),\\n    'Lucro L\\u0000edquido (3 meses)': float(netinc_q1_2024),\\n    'P/L': float(p_over_l) if p_over_l is not None else None,\\n    'P/VP': float(p_over_vp),\\n    'P/EBIT': float(p_over_ebit),\\n    'PSR': float(psr),\\n    'P/Ativos': float(p_over_ativos),\\n    'P/Cap. Giro': float(p_over_cap_giro),\\n    'P/Ativ Circ Liq': float(p_over_ativ_circ_liq),\\n    'EV / EBITDA': float(ev_over_ebitda),\\n    'EV / EBIT': float(ev_over_ebit),\\n    'LPA': float(lpa_parent),\\n    'VPA': float(vpa),\\n    'Marg. Bruta': float(round(marg_bruta,2)),\\n    'Marg. EBIT': float(round(marg_ebit,2)),\\n    'Marg. L\\u0000edquida': float(round(marg_liq,2)),\\n    'EBIT / Ativo': float(round(ebit_over_ativo,2)),\\n    'ROIC': float(round(roic,2)),\\n    'ROE': float(round(roe,2)),\\n    'Liquidez Corr': float(round(liquidez_corr,2)),\\n    'Div Br/ Patrim': float(round(divbr_over_patrim,2)),\\n    'Giro Ativos': float(round(giro_ativos,2)),\\n    # Extras for debugging\\n    'market_cap': float(market_cap),\\n    'enterprise_value': float(enterprise_value),\\n    'outstanding': outstanding,\\n    'issued': issued,\\n}\\n\\nprint(results)\\n\"} }",
+            "call_id": "call_z4o7aeL5Mn6fHZN8qBhwFeAp",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0fb0533a69a994c10069def9e95390819581dd68d2360b30d0",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_z4o7aeL5Mn6fHZN8qBhwFeAp",
+            "output": "{'status': 'error', 'report': 'Failed to run code: embedded null byte'}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0fb0533a69a994c10069defa1142ac81958902a31a059beba5",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"from decimal import Decimal\\n# Inputs\\nissued = 4539007000\\ntreasury = 239153000\\noutstanding = issued - treasury\\nprice = Decimal('63.14')\\n\\nativo_total = Decimal('458033000000.0')\\nativo_circ = Decimal('87571000000.0')\\ncaixa = Decimal('18935000000.0')\\naplic_fin = Decimal('221000000.0')\\ndisponibilidades = caixa + aplic_fin\\n\\npassivo_circ = Decimal('78325000000.0')\\nfornecedores = Decimal('27710000000.0')\\n\\ndeb_short = Decimal('7387000000.0')\\ndeb_long = Decimal('65925000000.0')\\ndiv_bruta = deb_short + deb_long\\n\\nequity_consolidado = Decimal('194836000000.0')\\nequity_parent = Decimal('187211000000.0')\\n\\n# Quarterly Q1 2024\\nrevenue_q1_2024 = Decimal('41891000000.0')\\nebit_q1_2024 = Decimal('12726000000.0')\\nnetinc_q1_2024 = Decimal('8332000000.0')\\n\\nea_revenue_q1_2023 = Decimal('43841000000.0')\\nebit_q1_2023 = Decimal('14671000000.0')\\nnetinc_q1_2023 = Decimal('9734000000.0')\\n\\n# Annual 2023\\nrevenue_2023 = Decimal('208066000000.0')\\nebit_2023 = Decimal('65272000000.0')\\nnetinc_2023 = Decimal('40554000000.0')\\n\\n# Depreciation\\nda_2023 = Decimal('15300000000.0')\\nda_q1_2024 = Decimal('3540000000.0')\\nda_q1_2023 = Decimal('3409000000.0')\\n\\n# Market cap\\nmarket_cap = price * Decimal(outstanding)\\n\\n# TTM\\nrevenue_ttm = revenue_2023 + revenue_q1_2024 - ea_revenue_q1_2023\\nebit_ttm = ebit_2023 + ebit_q1_2024 - ebit_q1_2023\\nnetinc_ttm = netinc_2023 + netinc_q1_2024 - netinc_q1_2023\\n\\nda_ttm = da_2023 + da_q1_2024 - da_q1_2023\\nebitda_ttm = ebit_ttm + da_ttm\\n\\ncapital_de_giro = ativo_circ - passivo_circ\\n\\n# EV\\ndiv_liq = div_bruta - disponibilidades\\nenterprise_value = market_cap + div_liq\\n\\n# VPA and LPA (parent attributable)\\nequity_parent = Decimal('187211000000.0')\\nparent_annual = Decimal('39940000000.0')\\nparent_q1_2024 = Decimal('8291000000.0')\\nparent_q1_2023 = Decimal('9521000000.0')\\nparent_ttm = parent_annual + parent_q1_2024 - parent_q1_2023\\nvpa = equity_parent / Decimal(outstanding)\\nlpa_parent = parent_ttm / Decimal(outstanding)\\n\\n# Ratios\\np_over_l = (price / lpa_parent) if lpa_parent != 0 else None\\np_over_vp = price / vpa\\np_over_ebit = market_cap / ebit_ttm\\npsr = market_cap / revenue_ttm\\np_over_ativos = market_cap / ativo_total\\np_over_cap_giro = market_cap / capital_de_giro\\np_over_ativ_circ_liq = market_cap / capital_de_giro\\n\\nev_over_ebitda = enterprise_value / ebitda_ttm\\nev_over_ebit = enterprise_value / ebit_ttm\\n\\n# Margins\\n# Need gross_ttm: gross annual + q1 2024 - q1 2023\\n# Use gross figures from dataset: gross_2023 = 88050000000, gross_q1_2024 = 15297000000, gross_q1_2023 = 18117000000\\ngross_2023 = Decimal('88050000000.0')\\ngross_q1_2024 = Decimal('15297000000.0')\\ngross_q1_2023 = Decimal('18117000000.0')\\n\\ngross_ttm = gross_2023 + gross_q1_2024 - gross_q1_2023\\nmarg_bruta = (gross_ttm / revenue_ttm) * 100\\nmarg_ebit = (ebit_ttm / revenue_ttm) * 100\\nmarg_liq = (netinc_ttm / revenue_ttm) * 100\\n\\nebit_over_ativo = (ebit_ttm / ativo_total) * 100\\nroic = (ebit_ttm / (ativo_total - fornecedores - caixa)) * 100\\nroe = (netinc_ttm / equity_consolidado) * 100\\nliquidez_corr = ativo_circ / passivo_circ\\ndivbr_over_patrim = div_bruta / equity_consolidado\\ngiro_ativos = revenue_ttm / ativo_total\\n\\n# Rounding\\nfrom decimal import ROUND_HALF_UP\\n\\ndef q(x, d=2):\\n    return float(x.quantize(Decimal(10) ** -d, rounding=ROUND_HALF_UP))\\n\\nout = {\\n 'Ativo': float(ativo_total),\\n 'Disponibilidades': float(disponibilidades),\\n 'Ativo Circulante': float(ativo_circ),\\n 'D\u00edv. Bruta': float(div_bruta),\\n 'D\u00edv. L\u00edquida': float(div_liq),\\n 'Patrim. L\u00edq': float(equity_consolidado),\\n 'Receita L\u00edquida (12 meses)': float(revenue_ttm),\\n 'EBIT (12 meses)': float(ebit_ttm),\\n 'Lucro L\u00edquido (12 meses)': float(netinc_ttm),\\n 'Receita L\u00edquida (3 meses)': float(revenue_q1_2024),\\n 'EBIT (3 meses)': float(ebit_q1_2024),\\n 'Lucro L\u00edquido (3 meses)': float(netinc_q1_2024),\\n 'P/L': q(p_over_l,2) if p_over_l is not None else None,\\n 'P/VP': q(p_over_vp,2),\\n 'P/EBIT': q(p_over_ebit,2),\\n 'PSR': q(psr,2),\\n 'P/Ativos': q(p_over_ativos,2),\\n 'P/Cap. Giro': q(p_over_cap_giro,2),\\n 'P/Ativ Circ Liq': q(p_over_ativ_circ_liq,2),\\n 'EV / EBITDA': q(ev_over_ebitda,2),\\n 'EV / EBIT': q(ev_over_ebit,2),\\n 'LPA': q(lpa_parent,4),\\n 'VPA': q(vpa,4),\\n 'Marg. Bruta': q(marg_bruta,2),\\n 'Marg. EBIT': q(marg_ebit,2),\\n 'Marg. L\u00edquida': q(marg_liq,2),\\n 'EBIT / Ativo': q(ebit_over_ativo,2),\\n 'ROIC': q(roic,2),\\n 'ROE': q(roe,2),\\n 'Liquidez Corr': q(liquidez_corr,2),\\n 'Div Br/ Patrim': q(divbr_over_patrim,2),\\n 'Giro Ativos': q(giro_ativos,2),\\n 'market_cap': float(market_cap),\\n 'enterprise_value': float(enterprise_value),\\n 'outstanding': outstanding\\n}\\n\\nprint(out)\\n\"} }",
+            "call_id": "call_YSluSRVopkcZGUTGgEkEZHAG",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0fb0533a69a994c10069defa125318819595783ec6776cec6a",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_YSluSRVopkcZGUTGgEkEZHAG",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\"{\\'Ativo\\': 458033000000.0, \\'Disponibilidades\\': 19156000000.0, \\'Ativo Circulante\\': 87571000000.0, \\'D\\\\xc3\\\\xadv. Bruta\\': 73312000000.0, \\'D\\\\xc3\\\\xadv. L\\\\xc3\\\\xadquida\\': 54156000000.0, \\'Patrim. L\\\\xc3\\\\xadq\\': 194836000000.0, \\'Receita L\\\\xc3\\\\xadquida (12 meses)\\': 206116000000.0, \\'EBIT (12 meses)\\': 63327000000.0, \\'Lucro L\\\\xc3\\\\xadquido (12 meses)\\': 39152000000.0, \\'Receita L\\\\xc3\\\\xadquida (3 meses)\\': 41891000000.0, \\'EBIT (3 meses)\\': 12726000000.0, \\'Lucro L\\\\xc3\\\\xadquido (3 meses)\\': 8332000000.0, \\'P/L\\': 7.01, \\'P/VP\\': 1.45, \\'P/EBIT\\': 4.29, \\'PSR\\': 1.32, \\'P/Ativos\\': 0.59, \\'P/Cap. Giro\\': 29.36, \\'P/Ativ Circ Liq\\': 29.36, \\'EV / EBITDA\\': 4.13, \\'EV / EBIT\\': 5.14, \\'LPA\\': 9.0026, \\'VPA\\': 43.5389, \\'Marg. Bruta\\': 41.35, \\'Marg. EBIT\\': 30.72, \\'Marg. L\\\\xc3\\\\xadquida\\': 19.0, \\'EBIT / Ativo\\': 13.83, \\'ROIC\\': 15.39, \\'ROE\\': 20.09, \\'Liquidez Corr\\': 1.12, \\'Div Br/ Patrim\\': 0.38, \\'Giro Ativos\\': 0.45, \\'market_cap\\': 271492781560.0, \\'enterprise_value\\': 325648781560.0, \\'outstanding\\': 4299854000}\\\\n\"\\nStdErr:\\nb\\'\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0fb0533a69a994c10069defa32de748195a26d583c1c083ced",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_0fb0533a69a994c10069defa3ce2ac819595739c875c6f4016",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"indicators\":[{\"indicator\":\"Ativo\",\"value\":458033000000.0},{\"indicator\":\"Disponibilidades\",\"value\":19156000000.0},{\"indicator\":\"Ativo Circulante\",\"value\":87571000000.0},{\"indicator\":\"D\u00edv. Bruta\",\"value\":73312000000.0},{\"indicator\":\"D\u00edv. L\u00edquida\",\"value\":54156000000.0},{\"indicator\":\"Patrim. L\u00edq\",\"value\":194836000000.0},{\"indicator\":\"Receita L\u00edquida (12 meses)\",\"value\":206116000000.0},{\"indicator\":\"EBIT (12 meses)\",\"value\":63327000000.0},{\"indicator\":\"Lucro L\u00edquido (12 meses)\",\"value\":39152000000.0},{\"indicator\":\"Receita L\u00edquida (3 meses)\",\"value\":41891000000.0},{\"indicator\":\"EBIT (3 meses)\",\"value\":12726000000.0},{\"indicator\":\"Lucro L\u00edquido (3 meses)\",\"value\":8332000000.0},{\"indicator\":\"P/L\",\"value\":7.01},{\"indicator\":\"P/VP\",\"value\":1.45},{\"indicator\":\"P/EBIT\",\"value\":4.29},{\"indicator\":\"PSR\",\"value\":1.32},{\"indicator\":\"P/Ativos\",\"value\":0.59},{\"indicator\":\"P/Cap. Giro\",\"value\":29.36},{\"indicator\":\"P/Ativ Circ Liq\",\"value\":29.36},{\"indicator\":\"EV / EBITDA\",\"value\":4.13},{\"indicator\":\"EV / EBIT\",\"value\":5.14},{\"indicator\":\"LPA\",\"value\":9.0026},{\"indicator\":\"VPA\",\"value\":43.5389},{\"indicator\":\"Marg. Bruta\",\"value\":41.35},{\"indicator\":\"Marg. EBIT\",\"value\":30.72},{\"indicator\":\"Marg. L\u00edquida\",\"value\":19.00},{\"indicator\":\"EBIT / Ativo\",\"value\":13.83},{\"indicator\":\"ROIC\",\"value\":15.39},{\"indicator\":\"ROE\",\"value\":20.09},{\"indicator\":\"Liquidez Corr\",\"value\":1.12},{\"indicator\":\"Div Br/ Patrim\",\"value\":0.38},{\"indicator\":\"Giro Ativos\",\"value\":0.45}]}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 178.54474401474,
+    "output": {
+        "indicators": [
+            {
+                "indicator": "Ativo",
+                "value": 458033000000.0
+            },
+            {
+                "indicator": "Disponibilidades",
+                "value": 19156000000.0
+            },
+            {
+                "indicator": "Ativo Circulante",
+                "value": 87571000000.0
+            },
+            {
+                "indicator": "D\u00edv. Bruta",
+                "value": 73312000000.0
+            },
+            {
+                "indicator": "D\u00edv. L\u00edquida",
+                "value": 54156000000.0
+            },
+            {
+                "indicator": "Patrim. L\u00edq",
+                "value": 194836000000.0
+            },
+            {
+                "indicator": "Receita L\u00edquida (12 meses)",
+                "value": 206116000000.0
+            },
+            {
+                "indicator": "EBIT (12 meses)",
+                "value": 63327000000.0
+            },
+            {
+                "indicator": "Lucro L\u00edquido (12 meses)",
+                "value": 39152000000.0
+            },
+            {
+                "indicator": "Receita L\u00edquida (3 meses)",
+                "value": 41891000000.0
+            },
+            {
+                "indicator": "EBIT (3 meses)",
+                "value": 12726000000.0
+            },
+            {
+                "indicator": "Lucro L\u00edquido (3 meses)",
+                "value": 8332000000.0
+            },
+            {
+                "indicator": "P/L",
+                "value": 7.01
+            },
+            {
+                "indicator": "P/VP",
+                "value": 1.45
+            },
+            {
+                "indicator": "P/EBIT",
+                "value": 4.29
+            },
+            {
+                "indicator": "PSR",
+                "value": 1.32
+            },
+            {
+                "indicator": "P/Ativos",
+                "value": 0.59
+            },
+            {
+                "indicator": "P/Cap. Giro",
+                "value": 29.36
+            },
+            {
+                "indicator": "P/Ativ Circ Liq",
+                "value": 29.36
+            },
+            {
+                "indicator": "EV / EBITDA",
+                "value": 4.13
+            },
+            {
+                "indicator": "EV / EBIT",
+                "value": 5.14
+            },
+            {
+                "indicator": "LPA",
+                "value": 9.0026
+            },
+            {
+                "indicator": "VPA",
+                "value": 43.5389
+            },
+            {
+                "indicator": "Marg. Bruta",
+                "value": 41.35
+            },
+            {
+                "indicator": "Marg. EBIT",
+                "value": 30.72
+            },
+            {
+                "indicator": "Marg. L\u00edquida",
+                "value": 19.0
+            },
+            {
+                "indicator": "EBIT / Ativo",
+                "value": 13.83
+            },
+            {
+                "indicator": "ROIC",
+                "value": 15.39
+            },
+            {
+                "indicator": "ROE",
+                "value": 20.09
+            },
+            {
+                "indicator": "Liquidez Corr",
+                "value": 1.12
+            },
+            {
+                "indicator": "Div Br/ Patrim",
+                "value": 0.38
+            },
+            {
+                "indicator": "Giro Ativos",
+                "value": 0.45
+            }
+        ]
+    }
+}

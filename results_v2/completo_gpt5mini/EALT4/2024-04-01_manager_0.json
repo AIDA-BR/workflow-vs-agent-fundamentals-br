@@ -1,0 +1,107 @@
+{
+    "usage": {
+        "requests": 5,
+        "input_tokens": 57835,
+        "output_tokens": 10412,
+        "total_tokens": 68247
+    },
+    "steps": [
+        {
+            "id": "rs_078d8fc25a346af20069dde540ad648194aa5667f8701a232a",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Calculations for EALT4 based on provided data (row for 2024-04-01)\\n# Given data from the row:\\nativo = 560724000.0\\ndisponibilidades = 15184000.0\\nativo_circulante = 219742000.0\\ndiv_bruta = 127354000.0\\ndiv_liquida = 112170000.0\\npatr_liq = 243576000.0\\nreceita_12m = 495479000.0\\nebit_12m = 52743000.0\\nlucro_liq_12m = 49313000.0\\nlpa = 2.191689\\nvpa = 10.825600\\npreco = 10.74\\nmarket_cap = preco_shares = None\\n# compute shares outstanding from VPA = Patrim\u00f4nio / shares => shares = Patr / VPA\\nshares = patr_liq / vpa\\nmarket_cap = preco * shares\\n# multiples from row\\npl = 4.900331\\np_vp = 0.992093\\nev_ebitda = 4.82037\\nev_ebit = 6.708378\\n# compute implied market cap and EV\\nimplied_market_cap_from_PL = lpa * pl  # equals preco\\n# compute EV current = market_cap + div_liquida\\nev_current = market_cap + div_liquida\\n# compute EBITDA implied as in prior notes maybe via EV/EBITDA = EV / EBITDA -> EBITDA = EV / (EV/EBITDA)\\nebitda_impl = ev_current / ev_ebitda\\n# Now valuation scenarios\\n# Use targets similar to previous analyses:\\n# P/L target = 8\\npl_target = 8.0\\nprice_pl_target = lpa * pl_target\\n# P/VPA target = 1.2\\npv_target = 1.2\\nprice_pv_target = vpa * pv_target\\n# EV/EBIT target = 8\\nev_ebit_target = 8.0\\n# compute EV target = ev_ebit_target * ebit\\nev_target_ebit = ev_ebit_target * ebit_12m\\nmarket_cap_target_from_ev_ebit = ev_target_ebit - div_liquida\\nprice_ev_ebit_target = market_cap_target_from_ev_ebit / shares\\n# EV/EBITDA target = 6\\nev_ebitda_target = 6.0\\nev_target_ebitda = ev_ebitda_target * ebitda_impl\\nmarket_cap_target_from_ev_ebitda = ev_target_ebitda - div_liquida\\nprice_ev_ebitda_target = market_cap_target_from_ev_ebitda / shares\\n\\nshares, market_cap, ev_current, ebitda_impl, price_pl_target, price_pv_target, price_ev_ebit_target, price_ev_ebitda_target\\nprint('shares =', shares)\\nprint('market_cap =', market_cap)\\nprint('EV current =', ev_current)\\nprint('EBITDA implied =', ebitda_impl)\\nprint('price P/L target (8) =', price_pl_target)\\nprint('price P/VPA target (1.2) =', price_pv_target)\\nprint('price EV/EBIT target (8) =', price_ev_ebit_target)\\nprint('price EV/EBITDA target (6) =', price_ev_ebitda_target)\\n\\n# Also compute simple average and weighted conservative\\nprices = [price_pl_target, price_pv_target, price_ev_ebit_target, price_ev_ebitda_target]\\nprint('\\\\nPrices list =', prices)\\nprint('mean price =', sum(prices)/len(prices))\\n\\n# Also compute downside/upside vs current price\\nprint('\\\\nCurrent price:', preco)\\nfor name, p in [('P/L8', price_pl_target), ('P/VPA1.2', price_pv_target), ('EV/EBIT8', price_ev_ebit_target), ('EV/EBITDA6', price_ev_ebitda_target)]:\\n    print(name, '->', p, ' (upside % =', (p/preco - 1)*100, '%)')\\n\"} }",
+            "call_id": "call_GGpReP5981VxJOwpq3idwnWJ",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_078d8fc25a346af20069dde556244c819480443eb5988288bd",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_GGpReP5981VxJOwpq3idwnWJ",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'shares = 22500000.0\\\\nmarket_cap = 241650000.0\\\\nEV current = 353820000.0\\\\nEBITDA implied = 73401004.48720741\\\\nprice P/L target (8) = 17.533512\\\\nprice P/VPA target (1.2) = 12.99072\\\\nprice EV/EBIT target (8) = 13.767733333333334\\\\nprice EV/EBITDA target (6) = 14.58826786325531\\\\n\\\\nPrices list = [17.533512, 12.99072, 13.767733333333334, 14.58826786325531]\\\\nmean price = 14.720058299147162\\\\n\\\\nCurrent price: 10.74\\\\nP/L8 -> 17.533512  (upside % = 63.25430167597767 %)\\\\nP/VPA1.2 -> 12.99072  (upside % = 20.95642458100557 %)\\\\nEV/EBIT8 -> 13.767733333333334  (upside % = 28.19118559900684 %)\\\\nEV/EBITDA6 -> 14.58826786325531  (upside % = 35.83117191112952 %)\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_078d8fc25a346af20069dde561af548194a9093437f8e953ca",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Recompute with normalized LPA (exclude one-off alvara effect)\\nnormalized_lpa = 1.5012\\nprice_pl8_norm = normalized_lpa * 8\\nprice_pv1_2 = 12.99072  # from earlier calculation\\nprice_ev_ebit8 = 13.767733333333334\\nprice_ev_ebitda6 = 14.58826786325531\\nprices_norm = [price_pl8_norm, price_pv1_2, price_ev_ebit8, price_ev_ebitda6]\\nprint('P/L8 normalized price =', price_pl8_norm)\\nprint('Prices list normalized =', prices_norm)\\nprint('Mean normalized price =', sum(prices_norm)/len(prices_norm))\\nprint('Median normalized price =', sorted(prices_norm)[len(prices_norm)//2])\\n\\n# Upside vs current price\\ncurrent_price = 10.74\\nfor label,p in [('P/L8_norm', price_pl8_norm), ('P/VPA1.2', price_pv1_2), ('EV/EBIT8', price_ev_ebit8), ('EV/EBITDA6', price_ev_ebitda6)]:\\n    print(label, 'price', p, 'upside %', (p/current_price - 1)*100)\\n\\nprint('\\\\nConservative target: choose the lower quartile or average?')\\n\\n# calculate simple weighted average giving less weight to P/L since normalized LPA uncertain\\nweights = [0.25, 0.25, 0.25, 0.25]\\nweighted = sum(w*p for w,p in zip(weights, prices_norm))\\nprint('Weighted average (equal) =', weighted)\\n\\n# or conservative average excluding highest (EV/EBITDA)\\nimport statistics\\nconservative_avg = statistics.mean(prices_norm[:-1])\\nprint('Conservative avg excluding EV/EBITDA =', conservative_avg)\\n\\n\"}}",
+            "call_id": "call_VwNjAxS5aAeOPm0YqOV2xiZw",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_078d8fc25a346af20069dde57d53b88194987f2dcff9b24b36",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_VwNjAxS5aAeOPm0YqOV2xiZw",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'P/L8 normalized price = 12.0096\\\\nPrices list normalized = [12.0096, 12.99072, 13.767733333333334, 14.58826786325531]\\\\nMean normalized price = 13.339080299147161\\\\nMedian normalized price = 13.767733333333334\\\\nP/L8_norm price 12.0096 upside % 11.821229050279335\\\\nP/VPA1.2 price 12.99072 upside % 20.95642458100557\\\\nEV/EBIT8 price 13.767733333333334 upside % 28.19118559900684\\\\nEV/EBITDA6 price 14.58826786325531 upside % 35.83117191112952\\\\n\\\\nConservative target: choose the lower quartile or average?\\\\nWeighted average (equal) = 13.339080299147161\\\\nConservative avg excluding EV/EBITDA = 12.922684444444444\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_078d8fc25a346af20069dde5826624819480491714b5be3fd1",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Scenario: if alvara R$17,202,925.30 used to reduce net debt (approx)\\nalvara = 17202925.30\\ndiv_liquida_current = 112170000.0\\ndiv_liquida_reduced = div_liquida_current - alvara\\nshares = 22500000.0\\n# recompute prices for EV multiples using reduced net debt\\nev_ebit_target = 8.0\\nev_ebitda_target = 6.0\\n# ebit 12m and ebitda_impl from earlier\\nebit_12m = 52743000.0\\n# recompute ebitda impl as earlier\\nev_current = 353820000.0\\nev_ebitda_ratio = 4.82037\\nebitda_impl = ev_current / ev_ebitda_ratio\\n# EV targets\\nev_target_ebit = ev_ebit_target * ebit_12m\\nmarket_cap_target_ebit_reduced = ev_target_ebit - div_liquida_reduced\\nprice_ev_ebit_target_reduced = market_cap_target_ebit_reduced / shares\\n# EV/EBITDA target\\nev_target_ebitda = ev_ebitda_target * ebitda_impl\\nmarket_cap_target_ebitda_reduced = ev_target_ebitda - div_liquida_reduced\\nprice_ev_ebitda_target_reduced = market_cap_target_ebitda_reduced / shares\\n\\nev_target_ebit, price_ev_ebit_target_reduced, ev_target_ebitda, price_ev_ebitda_target_reduced\\nprint('Div l\u00edquida reduced =', div_liquida_reduced)\\nprint('EV/EBIT target price (with debt reduced) =', price_ev_ebit_target_reduced)\\nprint('EV/EBITDA target price (with debt reduced) =', price_ev_ebitda_target_reduced)\\nprint('Upside % EV/EBIT (reduced) =', (price_ev_ebit_target_reduced/10.74 - 1)*100)\\nprint('Upside % EV/EBITDA (reduced) =', (price_ev_ebitda_target_reduced/10.74 - 1)*100)\\n\\n# Also compute a quick 'immediate boost' theoretical price if alvara used to reduce debt and market cap unchanged: Market Cap = market_cap_current; EV reduces so P/E etc change. But we'll stick to EV-based targets above.\\n\"}}",
+            "call_id": "call_kPXgnQsekWDwEMCDPqTekJd7",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_078d8fc25a346af20069dde59233788194908eb7997810d27e",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_kPXgnQsekWDwEMCDPqTekJd7",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Div l\\\\xc3\\\\xadquida reduced = 94967074.7\\\\nEV/EBIT target price (with debt reduced) = 14.532307791111112\\\\nEV/EBITDA target price (with debt reduced) = 15.352842321033089\\\\nUpside % EV/EBIT (reduced) = 35.31012840885579\\\\nUpside % EV/EBITDA (reduced) = 42.95011472097847\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_078d8fc25a346af20069dde599ae588194a8feb27e181632d3",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"current_price = 10.74\\ntarget = 13.35\\nupside = (target/current_price - 1) * 100\\nshares = 22500000.0\\nmarket_cap = current_price * shares\\nev_current = market_cap + 112170000.0\\nprint('Upside % =', round(upside,1))\\nprint('Shares =', int(shares))\\nprint('Market cap = R$', round(market_cap,2))\\nprint('EV current = R$', round(ev_current,2))\\n\"}}",
+            "call_id": "call_blZFxt480eQgO0KbGy95IJQB",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_078d8fc25a346af20069dde5a474d481948b035404dd5ff6e2",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_blZFxt480eQgO0KbGy95IJQB",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Upside % = 24.3\\\\nShares = 22500000\\\\nMarket cap = R$ 241650000.0\\\\nEV current = R$ 353820000.0\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_078d8fc25a346af20069dde5a79134819480ad9fa5ecdf7cc0",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_078d8fc25a346af20069dde5b3e1dc8194b6e7a63a750380d1",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"recommendation\":\"Comprar\",\"justification\":\"Resumo executivo\\n- Recomenda\u00e7\u00e3o: Comprar (horizonte 9\u201312 meses).\\n- Cota\u00e7\u00e3o base (01/04/2024): R$ 10,74.\\n- Pre\u00e7o\u2011alvo (venda) proposto: R$ 13,35 (potencial \u2248 +24,3% vs R$10,74).\\n\\nPrincipais n\u00fameros e diagn\u00f3stico (base: balan\u00e7o 2023-12-31 / preg\u00e3o 01/04/2024)\\n- A\u00e7\u00f5es em circula\u00e7\u00e3o (estimado): 22.500.000 (Patrim\u00f4nio / VPA).\\n- Market cap \u2248 R$ 241,65 M; D\u00edvida l\u00edquida = R$ 112,17 M \u2192 EV \u2248 R$ 353,82 M.\\n- Receita l\u00edquida (12 meses): R$ 495,48 M; EBIT (12 meses): R$ 52,743 M; Lucro l\u00edquido (12 meses): R$ 49,313 M.\\n- LPA (reportado) = R$ 2,1917. LPA normalizado (excluindo alvar\u00e1 judicial de R$ 17,20 M) \u2248 R$ 1,5012.\\n- M\u00faltiplos de mercado atuais: P/L = 4,90; P/VP = 0,99; EV/EBITDA = 4,82; EV/EBIT = 6,71.\\n- Indicadores de rentabilidade/estrutura: Margem EBIT \u2248 10,6%; Margem l\u00edquida \u2248 9,95%; ROE \u2248 20,2%; Liquidez corrente \u2248 1,10; D\u00edvida bruta / Patrim\u00f4nio \u2248 0,52.\\n\\nValuation por m\u00faltiplos (cen\u00e1rios, normalizando efeito do alvar\u00e1)\\n- P/L alvo = 8 (usando LPA normalizada 1,5012) \u2192 pre\u00e7o \u2248 R$ 12,01.\\n- P/VP alvo = 1,20 \u2192 pre\u00e7o \u2248 R$ 12,99.\\n- EV/EBIT alvo = 8 \u2192 pre\u00e7o \u2248 R$ 13,77.\\n- EV/EBITDA alvo = 6 \u2192 pre\u00e7o \u2248 R$ 14,59.\\n- M\u00e9dia simples (normalizada) \u2248 R$ 13,34 \u2192 pre\u00e7o\u2011alvo adotado conservador: R$ 13,35 (horizonte 9\u201312 meses).\\nMotivo da escolha: combina\u00e7\u00e3o entre (i) m\u00faltiplos atrativos atuais; (ii) rentabilidade operacional consistente; (iii) prud\u00eancia ao tratar o alvar\u00e1 como item n\u00e3o recorrente \u2014 adotamos LPA normalizada para parte do valuation, mas mantemos EV-based para capturar rerating poss\u00edvel.\\n\\nImpacto do alvar\u00e1 (cen\u00e1rio alternativo)\\n- Recebimento de R$ 17,20 M \u00e9 efeito positivo de liquidez mas n\u00e3o recorrente. Se a Companhia usar integralmente esse montante para reduzir d\u00edvida l\u00edquida, os alvos EV\u2011based subir\u00e3o: EV/EBIT=8 \u2192 pre\u00e7o \u2248 R$ 14,53; EV/EBITDA=6 \u2192 pre\u00e7o \u2248 R$ 15,35 (upside te\u00f3rico \u2248 +35% a +43%).\\n\\nCatalisadores\\n- Destina\u00e7\u00e3o do alvar\u00e1 (redu\u00e7\u00e3o de d\u00edvida melhora EV-multiples);\\n- Rerating por manuten\u00e7\u00e3o/eleva\u00e7\u00e3o de margens e ROE;\\n- Recupera\u00e7\u00e3o c\u00edclica do setor que melhora giro de ativos e lucro operacional.\\n\\nRiscos principais\\n- Alvar\u00e1 \u00e9 n\u00e3o recorrente \u2014 n\u00e3o basear expectativas estruturais nele;\\n- Setor c\u00edclico e sensibilidade ao capital de giro;\\n- Liquidez corrente apenas razo\u00e1vel (\u22481,1) \u2014 aten\u00e7\u00e3o a varia\u00e7\u00f5es operacionais;\\n- Risco jur\u00eddico residual (desdobramentos no STJ) e baixa frequ\u00eancia de comunicados (visibilidade reduzida);\\n- Liquidez de mercado pode ser limitada em preg\u00f5es menores.\\n\\nConclus\u00e3o pr\u00e1tica e recomenda\u00e7\u00e3o operacional\\n- Recomenda\u00e7\u00e3o: Comprar. Pre\u00e7o\u2011alvo (venda): R$ 13,35 (horizonte 9\u201312 meses) \u2014 potencial \u2248 +24,3% vs R$ 10,74.\\n- T\u00e1tica: entrada escalonada para investidores conservadores; posi\u00e7\u00e3o completa para perfil moderado a arrojado, sempre respeitando limite de risco/posi\u00e7\u00e3o. Monitorar: (i) destina\u00e7\u00e3o do alvar\u00e1; (ii) pr\u00f3ximos resultados trimestrais (margens, convers\u00e3o em caixa); (iii) eventuais fatos relevantes e desfecho judicial.\\n\\nObserva\u00e7\u00e3o: c\u00e1lculos e m\u00faltiplos baseados em balan\u00e7o processado em 2023-12-31 e pre\u00e7os do preg\u00e3o de 01/04/2024. A sensibilidade a alvar\u00e1 e eventos n\u00e3o recorrentes foi considerada explicitamente na normaliza\u00e7\u00e3o do LPA.\", \"target_price\":13.35}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 150.7643473148346,
+    "output": {
+        "recommendation": "Comprar",
+        "justification": "Resumo executivo\n- Recomenda\u00e7\u00e3o: Comprar (horizonte 9\u201312 meses).\n- Cota\u00e7\u00e3o base (01/04/2024): R$ 10,74.\n- Pre\u00e7o\u2011alvo (venda) proposto: R$ 13,35 (potencial \u2248 +24,3% vs R$10,74).\n\nPrincipais n\u00fameros e diagn\u00f3stico (base: balan\u00e7o 2023-12-31 / preg\u00e3o 01/04/2024)\n- A\u00e7\u00f5es em circula\u00e7\u00e3o (estimado): 22.500.000 (Patrim\u00f4nio / VPA).\n- Market cap \u2248 R$ 241,65 M; D\u00edvida l\u00edquida = R$ 112,17 M \u2192 EV \u2248 R$ 353,82 M.\n- Receita l\u00edquida (12 meses): R$ 495,48 M; EBIT (12 meses): R$ 52,743 M; Lucro l\u00edquido (12 meses): R$ 49,313 M.\n- LPA (reportado) = R$ 2,1917. LPA normalizado (excluindo alvar\u00e1 judicial de R$ 17,20 M) \u2248 R$ 1,5012.\n- M\u00faltiplos de mercado atuais: P/L = 4,90; P/VP = 0,99; EV/EBITDA = 4,82; EV/EBIT = 6,71.\n- Indicadores de rentabilidade/estrutura: Margem EBIT \u2248 10,6%; Margem l\u00edquida \u2248 9,95%; ROE \u2248 20,2%; Liquidez corrente \u2248 1,10; D\u00edvida bruta / Patrim\u00f4nio \u2248 0,52.\n\nValuation por m\u00faltiplos (cen\u00e1rios, normalizando efeito do alvar\u00e1)\n- P/L alvo = 8 (usando LPA normalizada 1,5012) \u2192 pre\u00e7o \u2248 R$ 12,01.\n- P/VP alvo = 1,20 \u2192 pre\u00e7o \u2248 R$ 12,99.\n- EV/EBIT alvo = 8 \u2192 pre\u00e7o \u2248 R$ 13,77.\n- EV/EBITDA alvo = 6 \u2192 pre\u00e7o \u2248 R$ 14,59.\n- M\u00e9dia simples (normalizada) \u2248 R$ 13,34 \u2192 pre\u00e7o\u2011alvo adotado conservador: R$ 13,35 (horizonte 9\u201312 meses).\nMotivo da escolha: combina\u00e7\u00e3o entre (i) m\u00faltiplos atrativos atuais; (ii) rentabilidade operacional consistente; (iii) prud\u00eancia ao tratar o alvar\u00e1 como item n\u00e3o recorrente \u2014 adotamos LPA normalizada para parte do valuation, mas mantemos EV-based para capturar rerating poss\u00edvel.\n\nImpacto do alvar\u00e1 (cen\u00e1rio alternativo)\n- Recebimento de R$ 17,20 M \u00e9 efeito positivo de liquidez mas n\u00e3o recorrente. Se a Companhia usar integralmente esse montante para reduzir d\u00edvida l\u00edquida, os alvos EV\u2011based subir\u00e3o: EV/EBIT=8 \u2192 pre\u00e7o \u2248 R$ 14,53; EV/EBITDA=6 \u2192 pre\u00e7o \u2248 R$ 15,35 (upside te\u00f3rico \u2248 +35% a +43%).\n\nCatalisadores\n- Destina\u00e7\u00e3o do alvar\u00e1 (redu\u00e7\u00e3o de d\u00edvida melhora EV-multiples);\n- Rerating por manuten\u00e7\u00e3o/eleva\u00e7\u00e3o de margens e ROE;\n- Recupera\u00e7\u00e3o c\u00edclica do setor que melhora giro de ativos e lucro operacional.\n\nRiscos principais\n- Alvar\u00e1 \u00e9 n\u00e3o recorrente \u2014 n\u00e3o basear expectativas estruturais nele;\n- Setor c\u00edclico e sensibilidade ao capital de giro;\n- Liquidez corrente apenas razo\u00e1vel (\u22481,1) \u2014 aten\u00e7\u00e3o a varia\u00e7\u00f5es operacionais;\n- Risco jur\u00eddico residual (desdobramentos no STJ) e baixa frequ\u00eancia de comunicados (visibilidade reduzida);\n- Liquidez de mercado pode ser limitada em preg\u00f5es menores.\n\nConclus\u00e3o pr\u00e1tica e recomenda\u00e7\u00e3o operacional\n- Recomenda\u00e7\u00e3o: Comprar. Pre\u00e7o\u2011alvo (venda): R$ 13,35 (horizonte 9\u201312 meses) \u2014 potencial \u2248 +24,3% vs R$ 10,74.\n- T\u00e1tica: entrada escalonada para investidores conservadores; posi\u00e7\u00e3o completa para perfil moderado a arrojado, sempre respeitando limite de risco/posi\u00e7\u00e3o. Monitorar: (i) destina\u00e7\u00e3o do alvar\u00e1; (ii) pr\u00f3ximos resultados trimestrais (margens, convers\u00e3o em caixa); (iii) eventuais fatos relevantes e desfecho judicial.\n\nObserva\u00e7\u00e3o: c\u00e1lculos e m\u00faltiplos baseados em balan\u00e7o processado em 2023-12-31 e pre\u00e7os do preg\u00e3o de 01/04/2024. A sensibilidade a alvar\u00e1 e eventos n\u00e3o recorrentes foi considerada explicitamente na normaliza\u00e7\u00e3o do LPA.",
+        "target_price": 13.35
+    }
+}
