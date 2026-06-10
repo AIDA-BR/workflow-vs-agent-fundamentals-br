@@ -1,7 +1,12 @@
 from src.experiments import StockInput
 
 STOCKS = [
-    StockInput(name="Alupar Investimento", cnpj="08.364.948/0001-38", stock_id="ALUP11"),
+    StockInput(
+        name="Alupar Investimento",
+        cnpj="08.364.948/0001-38",
+        stock_id="ALUP11",
+        shares_multiplier=1 / 3,  # 1 ALUP11 unit = 3 individual CVM shares
+    ),
     StockInput(name="Auren Energia", cnpj="28.594.234/0001-23", stock_id="AURE3"),
     StockInput(
         name="Companhia Paranaense de Energia",

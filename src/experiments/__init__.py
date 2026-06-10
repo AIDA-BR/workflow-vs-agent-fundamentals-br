@@ -7,6 +7,11 @@ class Model(StrEnum):
     GPT_5_MINI = "gpt-5-mini"
     GPT_4_1_NANO = "gpt-4.1-nano"
     GPT_5_NANO = "gpt-5-nano"
+    SABIAZINHO_4 = "sabiazinho-4"
+
+
+def is_maritaca_model(model: Model) -> bool:
+    return str(model).startswith("sabia")
 
 
 class Intensity(StrEnum):
@@ -18,14 +23,29 @@ class Intensity(StrEnum):
 class ExperimentMetadata(BaseModel):
     model: Model = Field(description="Model to be used")
     max_turns: int = Field(default=30, description="Maximum number of turns")
-    structured_output: dict = Field(description="Structured output")
     reflection: bool = Field(description="Use reflection")
     write_folder: str = Field(description="Folder to write results")
     reasoning: Intensity | None = Field(default=None, description="Reasoning intensity")
     verbosity: Intensity | None = Field(default=None, description="Verbosity intensity")
+    use_fundamental_analysis: bool = Field(
+        default=True, description="Enable fundamental analysis module"
+    )
+    use_material_facts: bool = Field(default=True, description="Enable material facts module")
+    material_facts_model: Model | None = Field(
+        default=None,
+        description="Model for material facts summarizer. Defaults to model if None.",
+    )
 
 
 class StockInput(BaseModel):
     name: str
     cnpj: str
     stock_id: str
+    shares_multiplier: float = Field(
+        default=1.0,
+        description=(
+            "Multiplier for total shares from CVM_SHARE_COMPOSITION. "
+            "Use 1000 for companies that store shares in thousands (e.g. EALT4). "
+            "Use 1/3 for unit certificates where 1 unit = 3 individual shares (e.g. ALUP11)."
+        ),
+    )

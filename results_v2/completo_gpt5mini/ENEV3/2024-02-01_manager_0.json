@@ -1,0 +1,107 @@
+{
+    "usage": {
+        "requests": 5,
+        "input_tokens": 44012,
+        "output_tokens": 10467,
+        "total_tokens": 54479
+    },
+    "steps": [
+        {
+            "id": "rs_0f809eb083048c0f0069ddc5f061a4819980075cdc0739cf67",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Calculations for Eneva (ENEV3)\\n# Given data from the user's dataset (row for 2024-02-01)\\nativo = 4.896246e+10\\ndisponibilidades = 7.645856e+09\\nativo_circulante = 1.130691e+10\\ndiv_bruta = 2.371200e+10\\ndiv_liquida = 1.606615e+10\\npatr_liq = 1.294354e+10\\nreceita_12m = 9.679977e+09\\nebit_12m = 2.246082e+09\\nlucro_liq_12m = 314181000.0\\nlpa = 0.198515\\nvpa = 8.178369\\nprecio = 12.84\\nev_ebitda = 9.511534\\np_ebit = 9.047439\\np_vp = 1.569995\\npsr = 2.099312\\n# Derived\\nshares = patr_liq / vpa\\nmarket_cap = precio * shares\\nnet_debt = div_liquida\\n# Implied EV from EV/EBITDA using implied EBITDA estimated by EV/EBITDA*?\\n# We don't have EBITDA given directly; we can back out EBITDA if we assume EV based on market cap and net debt:\\n# EV = market_cap + net_debt\\nEV = market_cap + net_debt\\n# then implied EBITDA = EV / (EV/EBITDA)\\nimplied_EBITDA = EV / ev_ebitda\\n# Alternatively, compute EV corresponding to target EV/EBITDA multiples e.g. 7x, 9x, 11x, 13x\\nmultiples = [7,9,11,13]\\nresults = []\\nfor m in multiples:\\n    ev_target = implied_EBITDA * m\\n    market_cap_target = ev_target - net_debt\\n    price_target = market_cap_target / shares\\n    results.append((m, ev_target, market_cap_target, price_target))\\n\\n# Also compute price implied by fair P/VP scenarios: 1.0x, 1.5x, 2.0x\\npvp_scenarios = [1.0, 1.3, 1.5, 2.0]\\npvp_results = []\\nfor pvp in pvp_scenarios:\\n    price_pvp = vpa * pvp\\n    pvp_results.append((pvp, price_pvp))\\n\\n# Compute price implied by P/EBIT fair multiples e.g. 7x,9x,11x\\np_ebit_scenarios = [7,9,11]\\np_ebit_results = []\\n# need EBIT per share = EBIT / shares\\nebit_per_share = ebit_12m / shares\\nfor m in p_ebit_scenarios:\\n    price_p_ebit = ebit_per_share * m\\n    p_ebit_results.append((m, price_p_ebit))\\n\\n# Print summary\\nprint(f\\\"Shares (estimated): {shares:,.0f}\\\")\\nprint(f\\\"Market cap (at price {precio}): {market_cap:,.2f}\\\")\\nprint(f\\\"Net debt: {net_debt:,.2f}\\\")\\nprint(f\\\"Enterprise value (market cap + net debt): {EV:,.2f}\\\")\\nprint(f\\\"Implied EBITDA (from EV and EV/EBITDA={ev_ebit}): {implied_EBITDA:,.2f}\\\")\\nprint('\\\\nPrice targets from EV/EBITDA scenarios: (multiple, EV_target, MarketCap_target, Price_target)')\\nfor r in results:\\n    print(r)\\nprint('\\\\nPrice targets from P/VP scenarios (P/VP, Price)')\\nfor r in pvp_results:\\n    print(r)\\nprint('\\\\nPrice targets from P/EBIT scenarios (P/EBIT, Price)')\\nfor r in p_ebit_results:\\n    print(r)\\n\\n# Also compute implied target based on previous target 16.44 multiple of price move\\nprev_target = 16.44\\nupside_prev = (prev_target - precio)/precio * 100\\nprint(f\\\"\\\\nPrevious target {prev_target} gives upside {upside_prev:.1f}% from current price {precio}\\\")\\n\\n# Provide results dict for consumption\\nresults_dict = {\\n    'shares': shares,\\n    'market_cap': market_cap,\\n    'net_debt': net_debt,\\n    'EV': EV,\\n    'implied_EBITDA': implied_EBITDA,\\n    'ev_ebitda_scenarios': results,\\n    'pvp_scenarios': pvp_results,\\n    'p_ebit_scenarios': p_ebit_results,\\n    'previous_target': prev_target,\\n    'previous_upside_percent': upside_prev\\n}\\nprint('\\\\nJSON_OUTPUT_START')\\nimport json\\nprint(json.dumps(results_dict))\\n\"}}",
+            "call_id": "call_RbPpkksYNTrs9MJTbPQEEvA3",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0f809eb083048c0f0069ddc61e614881998f37a2f72b61783a",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_RbPpkksYNTrs9MJTbPQEEvA3",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'Shares (estimated): 1,582,655,417\\\\nMarket cap (at price 12.84): 20,321,295,554.16\\\\nNet debt: 16,066,150,000.00\\\\nEnterprise value (market cap + net debt): 36,387,445,554.16\\\\n\\'\\nStdErr:\\nb\\'Traceback (most recent call last):\\\\n  File \"<string>\", line 59, in <module>\\\\n    print(f\"Implied EBITDA (from EV and EV/EBITDA={ev_ebit}): {implied_EBITDA:,.2f}\")\\\\n                                                   ^^^^^^^\\\\nNameError: name \\\\\\'ev_ebit\\\\\\' is not defined. Did you mean: \\\\\\'ev_ebitda\\\\\\'?\\\\n\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0f809eb083048c0f0069ddc632c7b48199ac90e8bb8a3afaaf",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Corrected calculations and print\\nativo = 4.896246e+10\\ndisponibilidades = 7.645856e+09\\nativo_circulante = 1.130691e+10\\ndiv_bruta = 2.371200e+10\\ndiv_liquida = 1.606615e+10\\npatr_liq = 1.294354e+10\\nreceita_12m = 9.679977e+09\\nebit_12m = 2.246082e+09\\nlucro_liq_12m = 314181000.0\\nlpa = 0.198515\\nvpa = 8.178369\\nprice = 12.84\\nev_ebitda = 9.511534\\np_ebit = 9.047439\\np_vp = 1.569995\\npsr = 2.099312\\n\\nshares = patr_liq / vpa\\nmarket_cap = price * shares\\nnet_debt = div_liquida\\nEV = market_cap + net_debt\\nimplied_EBITDA = EV / ev_ebitda\\n\\nmultiples = [7,9,11,13]\\nresults = []\\nfor m in multiples:\\n    ev_target = implied_EBITDA * m\\n    market_cap_target = ev_target - net_debt\\n    price_target = market_cap_target / shares\\n    results.append((m, ev_target, market_cap_target, price_target))\\n\\npvp_scenarios = [1.0, 1.3, 1.5, 2.0]\\npvp_results = []\\nfor pvp in pvp_scenarios:\\n    price_pvp = vpa * pvp\\n    pvp_results.append((pvp, price_pvp))\\n\\np_ebit_scenarios = [7,9,11]\\np_ebit_results = []\\nebit_per_share = ebit_12m / shares\\nfor m in p_ebit_scenarios:\\n    price_p_ebit = ebit_per_share * m\\n    p_ebit_results.append((m, price_p_ebit))\\n\\nprint(f\\\"Shares (estimated): {shares:,.0f}\\\")\\nprint(f\\\"Market cap (at price {price}): {market_cap:,.2f}\\\")\\nprint(f\\\"Net debt: {net_debt:,.2f}\\\")\\nprint(f\\\"Enterprise value (market cap + net debt): {EV:,.2f}\\\")\\nprint(f\\\"Implied EBITDA (from EV and EV/EBITDA={ev_ebitda}): {implied_EBITDA:,.2f}\\\")\\nprint('\\\\nPrice targets from EV/EBITDA scenarios: (multiple, EV_target, MarketCap_target, Price_target)')\\nfor r in results:\\n    print(r)\\nprint('\\\\nPrice targets from P/VP scenarios (P/VP, Price)')\\nfor r in pvp_results:\\n    print(r)\\nprint('\\\\nPrice targets from P/EBIT scenarios (P/EBIT, Price)')\\nfor r in p_ebit_results:\\n    print(r)\\n\\nprev_target = 16.44\\nupside_prev = (prev_target - price)/price * 100\\nprint(f\\\"\\\\nPrevious target {prev_target} gives upside {upside_prev:.1f}% from current price {price}\\\")\\n\\nimport json\\nresults_dict = {\\n    'shares': shares,\\n    'market_cap': market_cap,\\n    'net_debt': net_debt,\\n    'EV': EV,\\n    'implied_EBITDA': implied_EBITDA,\\n    'ev_ebitda_scenarios': results,\\n    'pvp_scenarios': pvp_results,\\n    'p_ebit_scenarios': p_ebit_results,\\n    'previous_target': prev_target,\\n    'previous_upside_percent': upside_prev\\n}\\nprint('\\\\nJSON_OUTPUT_START')\\nprint(json.dumps(results_dict))\\n\"} }",
+            "call_id": "call_zS7rG5U8hk5uipJKM9kKQA8V",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0f809eb083048c0f0069ddc6332f9c8199ae20b34f541463f5",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_zS7rG5U8hk5uipJKM9kKQA8V",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'Shares (estimated): 1,582,655,417\\\\nMarket cap (at price 12.84): 20,321,295,554.16\\\\nNet debt: 16,066,150,000.00\\\\nEnterprise value (market cap + net debt): 36,387,445,554.16\\\\nImplied EBITDA (from EV and EV/EBITDA=9.511534): 3,825,612,730.20\\\\n\\\\nPrice targets from EV/EBITDA scenarios: (multiple, EV_target, MarketCap_target, Price_target)\\\\n(7, 26779289111.423786, 10713139111.423786, 6.769091361525196)\\\\n(9, 34430514571.83058, 18364364571.83058, 11.603514179193443)\\\\n(11, 42081740032.23738, 26015590032.23738, 16.437936996861694)\\\\n(13, 49732965492.64418, 33666815492.64418, 21.272359814529942)\\\\n\\\\nPrice targets from P/VP scenarios (P/VP, Price)\\\\n(1.0, 8.178369)\\\\n(1.3, 10.6318797)\\\\n(1.5, 12.2675535)\\\\n(2.0, 16.356738)\\\\n\\\\nPrice targets from P/EBIT scenarios (P/EBIT, Price)\\\\n(7, 9.93430018386052)\\\\n(9, 12.772671664963527)\\\\n(11, 15.611043146066532)\\\\n\\\\nPrevious target 16.44 gives upside 28.0% from current price 12.84\\\\n\\\\nJSON_OUTPUT_START\\\\n{\"shares\": 1582655416.990845, \"market_cap\": 20321295554.16245, \"net_debt\": 16066150000.0, \"EV\": 36387445554.162445, \"implied_EBITDA\": 3825612730.203398, \"ev_ebitda_scenarios\": [[7, 26779289111.423786, 10713139111.423786, 6.769091361525196], [9, 34430514571.83058, 18364364571.83058, 11.603514179193443], [11, 42081740032.23738, 26015590032.23738, 16.437936996861694], [13, 49732965492.64418, 33666815492.64418, 21.272359814529942]], \"pvp_scenarios\": [[1.0, 8.178369], [1.3, 10.6318797], [1.5, 12.2675535], [2.0, 16.356738]], \"p_ebit_scenarios\": [[7, 9.93430018386052], [9, 12.772671664963527], [11, 15.611043146066532]], \"previous_target\": 16.44, \"previous_upside_percent\": 28.037383177570103}\\\\n\\'\\nStdErr:\\nb\\'\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0f809eb083048c0f0069ddc63c487c8199a4a0be803ca97a17",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Compute price target for EV/EBITDA = 10.5\\nimplied_EBITDA = 3825612730.203398\\nnet_debt = 16066150000.0\\nshares = 1582655416.990845\\nm = 10.5\\nev_target = implied_EBITDA * m\\nmarket_cap_target = ev_target - net_debt\\nprice_target = market_cap_target / shares\\nprint('EV_target:', ev_target)\\nprint('MarketCap_target:', market_cap_target)\\nprint('Price_target:', price_target)\"} }",
+            "call_id": "call_ooSOhBZLKVys8SlZ9UqbT9w6",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0f809eb083048c0f0069ddc646b4ec8199a63059ea5b0a954f",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_ooSOhBZLKVys8SlZ9UqbT9w6",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'EV_target: 40168933667.13568\\\\nMarketCap_target: 24102783667.13568\\\\nPrice_target: 15.22933129244463\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0f809eb083048c0f0069ddc648b0bc819984a167ecd501cacc",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Prepare formatted numbers for inclusion in the justification\\nshares = 1582655416.990845\\nprice = 12.84\\nmarket_cap = 20321295554.16245\\nnet_debt = 16066150000.0\\nEV = 36387445554.162445\\nimplied_EBITDA = 3825612730.203398\\n# target from EV/EBITDA=10.5 scenario\\nev_target = implied_EBITDA * 10.5\\nmarket_cap_target = ev_target - net_debt\\nprice_target = market_cap_target / shares\\nupside = (price_target - price) / price * 100\\n\\nprint('Shares (MM):', shares/1e6)\\nprint('Market cap (R$):', f\\\"{market_cap:,.0f}\\\")\\nprint('Net debt (R$):', f\\\"{net_debt:,.0f}\\\")\\nprint('EV (R$):', f\\\"{EV:,.0f}\\\")\\nprint('Implied EBITDA (R$):', f\\\"{implied_EBITDA:,.0f}\\\")\\nprint('\\\\nTarget based on EV/EBITDA 10.5x:')\\nprint('EV target (R$):', f\\\"{ev_target:,.0f}\\\")\\nprint('Market cap target (R$):', f\\\"{market_cap_target:,.0f}\\\")\\nprint('Price target (R$):', f\\\"{price_target:.2f}\\\")\\nprint('Upside (%):', f\\\"{upside:.1f}%\\\")\\n\\n# Also compute some alternative price anchors\\nprice_ev11 = 16.437936996861694\\nprice_ev9 = 11.603514179193443\\nprice_pvp15 = 12.2675535\\n\\nprint('\\\\nAlternative anchors:')\\nprint('EV/EBITDA 11x -> Price:', f\\\"{price_ev11:.2f}\\\")\\nprint('EV/EBITDA 9x  -> Price:', f\\\"{price_ev9:.2f}\\\")\\nprint('P/VP 1.5x     -> Price:', f\\\"{price_pvp15:.2f}\\\")\\n\\n# Output json\\nimport json\\nout = {\\n    'shares_million': shares/1e6,\\n    'market_cap': round(market_cap,0),\\n    'net_debt': round(net_debt,0),\\n    'EV': round(EV,0),\\n    'implied_EBITDA': round(implied_EBITDA,0),\\n    'ev10_5_price': round(price_target,2),\\n    'ev10_5_marketcap': round(market_cap_target,0),\\n    'ev10_5_EV': round(ev_target,0),\\n    'ev10_5_upside_percent': round(upside,1)\\n}\\nprint('\\\\nJSON_OUTPUT_START')\\nprint(json.dumps(out))\\n\"}}",
+            "call_id": "call_Ko7TjTfVeXyCr9645VzHDLTI",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0f809eb083048c0f0069ddc6696a748199a52b95c021ce3e97",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_Ko7TjTfVeXyCr9645VzHDLTI",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'Shares (MM): 1582.655416990845\\\\nMarket cap (R$): 20,321,295,554\\\\nNet debt (R$): 16,066,150,000\\\\nEV (R$): 36,387,445,554\\\\nImplied EBITDA (R$): 3,825,612,730\\\\n\\\\nTarget based on EV/EBITDA 10.5x:\\\\nEV target (R$): 40,168,933,667\\\\nMarket cap target (R$): 24,102,783,667\\\\nPrice target (R$): 15.23\\\\nUpside (%): 18.6%\\\\n\\\\nAlternative anchors:\\\\nEV/EBITDA 11x -> Price: 16.44\\\\nEV/EBITDA 9x  -> Price: 11.60\\\\nP/VP 1.5x     -> Price: 12.27\\\\n\\\\nJSON_OUTPUT_START\\\\n{\"shares_million\": 1582.655416990845, \"market_cap\": 20321295554.0, \"net_debt\": 16066150000.0, \"EV\": 36387445554.0, \"implied_EBITDA\": 3825612730.0, \"ev10_5_price\": 15.23, \"ev10_5_marketcap\": 24102783667.0, \"ev10_5_EV\": 40168933667.0, \"ev10_5_upside_percent\": 18.6}\\\\n\\'\\nStdErr:\\nb\\'\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0f809eb083048c0f0069ddc672ace8819998a8ac4ec7d40163",
+            "summary": [],
+            "type": "reasoning"
+        },
+        {
+            "id": "msg_0f809eb083048c0f0069ddc6844ff0819981efb7899e5cd0f1",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"recommendation\":\"Manter\",\"justification\":\"Decis\u00e3o (2024-02-01): Manter. Cota\u00e7\u00e3o de refer\u00eancia: R$12,84. Pre\u00e7o\u2011alvo de venda (horizonte 6\u201312 meses): R$15,23.\\n\\nResumo quantitativo e motivos:  \\n- Estrutura e escala: Ativo total ~R$48,96 bi; patrim\u00f4nio l\u00edquido R$12,94 bi; d\u00edvida l\u00edquida R$16,07 bi.  \\n- Opera\u00e7\u00e3o: EBIT 12m R$2,246 bi (margem EBIT \u224823,2%); EBITDA impl\u00edcito \u2248 R$3,83 bi; lucro l\u00edquido 12m R$314,2 mi (margem l\u00edquida \u22483,25%); \u00faltimo trimestre apresentou preju\u00edzo (~R$69,4 mi).  \\n- Valuation atual e m\u00e9tricas: Market cap \u2248 R$20,3 bi; EV \u2248 R$36,4 bi; EV/EBITDA 9,51; P/EBIT \u22489,05; P/VP \u22481,57; P/L \u224864,7.  \\n\\nAvalia\u00e7\u00e3o e deriva\u00e7\u00e3o do pre\u00e7o\u2011alvo:  \\n- Alvo R$15,23 baseado em um cen\u00e1rio conservador de re\u2011rating para EV/EBITDA = 10,5x (EV alvo \u2248R$40,17 bi \u2192 market cap alvo \u2248R$24,10 bi \u2192 pre\u00e7o alvo R$15,23). Upside impl\u00edcito \u2248 +18,6% sobre R$12,84.  \\n- \u00c2ncoras alternativas: EV/EBITDA 9x \u2192 R$11,60; EV/EBITDA 11x \u2192 R$16,44 (alvo anterior); P/VP 1,5x \u2192 R$12,27. Isso mostra que o pre\u00e7o justo depende fortemente da reavalia\u00e7\u00e3o da alavancagem e da capacidade de estabilizar lucro l\u00edquido.\\n\\nRiscos e catalisadores:  \\n- Riscos principais: (i) execu\u00e7\u00e3o da reestrutura\u00e7\u00e3o da d\u00edvida da subsidi\u00e1ria CELSE (termos podem exigir concess\u00f5es ou dilui\u00e7\u00e3o); (ii) altera\u00e7\u00e3o no Acordo de Acionistas (VELT) que pode reduzir liquidez e concentrar poder; (iii) incertezas sobre combina\u00e7\u00e3o proposta com a Vibra; (iv) volatilidade nos resultados e margem l\u00edquida deprimida.  \\n- Catalisadores positivos: desalavancagem efetiva (venda de ativos, reprofilamento favor\u00e1vel da d\u00edvida), avan\u00e7o/fechamento de opera\u00e7\u00e3o estrat\u00e9gica que gere sinergias e aumento sustent\u00e1vel do lucro l\u00edquido.\\n\\nRecomenda\u00e7\u00e3o pr\u00e1tica:  \\n- Manter posi\u00e7\u00f5es para investidores com exposi\u00e7\u00e3o atual, monitorando de perto: (a) termos finais da reestrutura\u00e7\u00e3o da CELSE; (b) altera\u00e7\u00f5es concretas no Acordo VELT; (c) evolu\u00e7\u00e3o das negocia\u00e7\u00f5es com a Vibra; (d) pr\u00f3ximos resultados trimestrais.  \\n- Para novos investidores: entrada cautelosa \u2014 prefer\u00edvel aguardar pre\u00e7o < ~R$12 ou sinais claros de desalavancagem/mitiga\u00e7\u00e3o de riscos; caso opte por entrada, considerar posi\u00e7\u00e3o escalonada.  \\n- Horizonte: 6\u201312 meses condicionado \u00e0 execu\u00e7\u00e3o dos catalisadores acima; rever recomenda\u00e7\u00e3o imediatamente se houver desfecho adverso na renegocia\u00e7\u00e3o da d\u00edvida ou dilui\u00e7\u00e3o significativa.\\n\\nConclus\u00e3o: A Eneva apresenta opera\u00e7\u00e3o robusta em termos de margem operacional (EBIT) e escala de ativos, mas a elevada alavancagem e a volatilidade do lucro l\u00edquido (incluindo preju\u00edzo trimestral recente) mant\u00eam o risco elevado. O pre\u00e7o\u2011alvo R$15,23 reflete um re\u2011rating moderado; sem sinais claros de desalavancagem/execu\u00e7\u00e3o favor\u00e1vel, mantemos postura neutra (Manter).\",\"target_price\":15.23}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 183.66975045204163,
+    "output": {
+        "recommendation": "Manter",
+        "justification": "Decis\u00e3o (2024-02-01): Manter. Cota\u00e7\u00e3o de refer\u00eancia: R$12,84. Pre\u00e7o\u2011alvo de venda (horizonte 6\u201312 meses): R$15,23.\n\nResumo quantitativo e motivos:  \n- Estrutura e escala: Ativo total ~R$48,96 bi; patrim\u00f4nio l\u00edquido R$12,94 bi; d\u00edvida l\u00edquida R$16,07 bi.  \n- Opera\u00e7\u00e3o: EBIT 12m R$2,246 bi (margem EBIT \u224823,2%); EBITDA impl\u00edcito \u2248 R$3,83 bi; lucro l\u00edquido 12m R$314,2 mi (margem l\u00edquida \u22483,25%); \u00faltimo trimestre apresentou preju\u00edzo (~R$69,4 mi).  \n- Valuation atual e m\u00e9tricas: Market cap \u2248 R$20,3 bi; EV \u2248 R$36,4 bi; EV/EBITDA 9,51; P/EBIT \u22489,05; P/VP \u22481,57; P/L \u224864,7.  \n\nAvalia\u00e7\u00e3o e deriva\u00e7\u00e3o do pre\u00e7o\u2011alvo:  \n- Alvo R$15,23 baseado em um cen\u00e1rio conservador de re\u2011rating para EV/EBITDA = 10,5x (EV alvo \u2248R$40,17 bi \u2192 market cap alvo \u2248R$24,10 bi \u2192 pre\u00e7o alvo R$15,23). Upside impl\u00edcito \u2248 +18,6% sobre R$12,84.  \n- \u00c2ncoras alternativas: EV/EBITDA 9x \u2192 R$11,60; EV/EBITDA 11x \u2192 R$16,44 (alvo anterior); P/VP 1,5x \u2192 R$12,27. Isso mostra que o pre\u00e7o justo depende fortemente da reavalia\u00e7\u00e3o da alavancagem e da capacidade de estabilizar lucro l\u00edquido.\n\nRiscos e catalisadores:  \n- Riscos principais: (i) execu\u00e7\u00e3o da reestrutura\u00e7\u00e3o da d\u00edvida da subsidi\u00e1ria CELSE (termos podem exigir concess\u00f5es ou dilui\u00e7\u00e3o); (ii) altera\u00e7\u00e3o no Acordo de Acionistas (VELT) que pode reduzir liquidez e concentrar poder; (iii) incertezas sobre combina\u00e7\u00e3o proposta com a Vibra; (iv) volatilidade nos resultados e margem l\u00edquida deprimida.  \n- Catalisadores positivos: desalavancagem efetiva (venda de ativos, reprofilamento favor\u00e1vel da d\u00edvida), avan\u00e7o/fechamento de opera\u00e7\u00e3o estrat\u00e9gica que gere sinergias e aumento sustent\u00e1vel do lucro l\u00edquido.\n\nRecomenda\u00e7\u00e3o pr\u00e1tica:  \n- Manter posi\u00e7\u00f5es para investidores com exposi\u00e7\u00e3o atual, monitorando de perto: (a) termos finais da reestrutura\u00e7\u00e3o da CELSE; (b) altera\u00e7\u00f5es concretas no Acordo VELT; (c) evolu\u00e7\u00e3o das negocia\u00e7\u00f5es com a Vibra; (d) pr\u00f3ximos resultados trimestrais.  \n- Para novos investidores: entrada cautelosa \u2014 prefer\u00edvel aguardar pre\u00e7o < ~R$12 ou sinais claros de desalavancagem/mitiga\u00e7\u00e3o de riscos; caso opte por entrada, considerar posi\u00e7\u00e3o escalonada.  \n- Horizonte: 6\u201312 meses condicionado \u00e0 execu\u00e7\u00e3o dos catalisadores acima; rever recomenda\u00e7\u00e3o imediatamente se houver desfecho adverso na renegocia\u00e7\u00e3o da d\u00edvida ou dilui\u00e7\u00e3o significativa.\n\nConclus\u00e3o: A Eneva apresenta opera\u00e7\u00e3o robusta em termos de margem operacional (EBIT) e escala de ativos, mas a elevada alavancagem e a volatilidade do lucro l\u00edquido (incluindo preju\u00edzo trimestral recente) mant\u00eam o risco elevado. O pre\u00e7o\u2011alvo R$15,23 reflete um re\u2011rating moderado; sem sinais claros de desalavancagem/execu\u00e7\u00e3o favor\u00e1vel, mantemos postura neutra (Manter).",
+        "target_price": 15.23
+    }
+}
