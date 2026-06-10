@@ -11,13 +11,18 @@ from dotenv import load_dotenv
 
 from src.db import get_stock_daily_info
 from src.db.base_query import ResponseFormat
-from src.experiments import ExperimentMetadata, Intensity, Model
-from src.experiments.manager import fundamental_analyst, manager as financial_manager
+from src.experiments import ExperimentMetadata, Intensity, Model, TechnicalVariant
+from src.experiments.manager import (
+    fundamental_analyst,
+    manager as financial_manager,
+    technical_analyst,
+)
 from src.experiments.manager.config import STOCKS
 from src.experiments.manager.material_facts_report import (
     format_six_month_report,
-    get_six_month_summary,
+    get_six_month_result,
 )
+from src.experiments.manager.technical_analyst import format_technical_report
 from src.experiments.utils import get_result
 from src.financial_agents.material_facts_summarizer import MonthlySummary
 from src.settings import WRITE_FOLDER
@@ -277,7 +282,7 @@ async def run_experiment(
                     material_facts_report_str = ""
                     if experiment.use_material_facts:
                         facts_model = experiment.material_facts_model or experiment.model
-                        six_month_summary = await get_six_month_summary(
+                        six_month_summary, facts_result = await get_six_month_result(
                             stock=stock,
                             analysis_date=analysis_date,
                             model=facts_model,
@@ -288,12 +293,43 @@ async def run_experiment(
 
                         stock_folder = f"{experiment.write_folder}/{stock.stock_id}"
                         os.makedirs(stock_folder, exist_ok=True)
-                        report_file = (
-                            f"{stock_folder}/{analysis_date.strftime('%Y-%m-%d')}"
-                            "_material_facts_0.txt"
-                        )
-                        with open(report_file, "w") as f:
+                        date_str = analysis_date.strftime("%Y-%m-%d")
+                        # Relatório textual (consumido pelo gestor)
+                        with open(f"{stock_folder}/{date_str}_material_facts_0.txt", "w") as f:
                             f.write(material_facts_report_str)
+                        # Resultado no padrão JSON com contagem de tokens
+                        with open(f"{stock_folder}/{date_str}_material_facts_0.json", "w") as f:
+                            json.dump(facts_result, f, indent=4, ensure_ascii=False)
+
+                    # --- Technical analysis module ---
+                    technical_report_str = ""
+                    if experiment.use_technical_analysis:
+                        tech_model = experiment.technical_model or experiment.model
+                        stock_folder = f"{experiment.write_folder}/{stock.stock_id}"
+                        charts_dir = f"{stock_folder}/charts"
+                        tech_result, _ = await technical_analyst.run(
+                            stock=stock,
+                            end_date=analysis_date,
+                            variant=experiment.technical_variant or TechnicalVariant.PLANILHA,
+                            charts_dir=charts_dir,
+                            model=tech_model,
+                            max_turns=experiment.max_turns,
+                        )
+
+                        _save_results(
+                            write_folder=experiment.write_folder,
+                            stock_id=stock.stock_id,
+                            analysis_date=analysis_date.strftime("%Y-%m-%d"),
+                            agent_role="technical",
+                            result=tech_result,
+                            elapsed_time=time.time() - start_time,
+                            experiment_id=0,
+                        )
+
+                        technical_output = get_result(tech_result, time.time() - start_time).get(
+                            "output", {}
+                        )
+                        technical_report_str = format_technical_report(technical_output)
 
                     decision = await financial_manager.run(
                         stock=stock,
@@ -302,6 +338,7 @@ async def run_experiment(
                         max_turns=experiment.max_turns,
                         indicators=indicators_str,
                         material_facts_report=material_facts_report_str,
+                        technical_report=technical_report_str,
                         model=experiment.model,
                     )
 

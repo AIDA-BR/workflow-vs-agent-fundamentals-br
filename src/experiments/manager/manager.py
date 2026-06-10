@@ -16,6 +16,8 @@ Cotação: {price_str}
 {indicators}
 
 {material_facts_report}
+
+{technical_report}
 """
 
 
@@ -52,6 +54,7 @@ async def analyse(
     indicators: str,
     max_turns: int,
     material_facts_report: str = "",
+    technical_report: str = "",
     run_config: RunConfig | None = None,
 ) -> RunResult:
     inp_data = TEMPLATE_INPUT.format(
@@ -61,6 +64,7 @@ async def analyse(
         price_str=price,
         indicators=indicators,
         material_facts_report=material_facts_report,
+        technical_report=technical_report,
     )
 
     return await Runner.run(agent, input=inp_data, max_turns=max_turns, run_config=run_config)
@@ -73,6 +77,7 @@ async def run(
     indicators: str,
     max_turns: int,
     material_facts_report: str = "",
+    technical_report: str = "",
     model: Model = Model.GPT_5_MINI,
 ):
     run_config = get_run_config(model)
@@ -87,5 +92,6 @@ async def run(
         indicators=indicators,
         max_turns=max_turns,
         material_facts_report=material_facts_report,
+        technical_report=technical_report,
         run_config=run_config,
     )

@@ -10,12 +10,15 @@ Variations:
 2. Full system with GPT-5-mini → completo_gpt5mini/
 3. Full system with Sabiazinho-4 → completo_sabiazinho4/
 4. Hybrid: material facts with Sabiazinho-4, manager with GPT-5-mini → hibrido_fatos_sabiazinho4_gestor_gpt5mini/
+5. Technical analyst via spreadsheet, GPT-5-mini → tecnico_planilha_gpt5mini/
+6. Technical analyst via charts/images, GPT-5-mini → tecnico_imagem_gpt5mini/
+7. Technical analyst via spreadsheet+images, GPT-5-mini → tecnico_hibrido_gpt5mini/
 """
 
 import asyncio
 from dotenv import load_dotenv
 
-from src.experiments import ExperimentMetadata, Intensity, Model
+from src.experiments import ExperimentMetadata, Intensity, Model, TechnicalVariant
 from src.experiments.manager.config import STOCKS
 from src.tools.material_facts import prefetch_all_raw_facts, _RAW_FACTS_CACHE_PATH
 from main_workflow import run_experiment
@@ -84,6 +87,54 @@ EXPERIMENTS = [
             reflection=False,
             use_fundamental_analysis=True,
             use_material_facts=True,
+        ),
+    },
+    # --- Variações do analista técnico (GPT-5-mini, sistema completo + técnico) ---
+    # Mesmos indicadores nas três; muda apenas a modalidade de apresentação.
+    # Baseline sem técnico: results_v2/completo_gpt5mini (Variação 2).
+    {
+        "name": "Variação 5: Técnico via planilha (GPT-5-mini)",
+        "config": ExperimentMetadata(
+            model=Model.GPT_5_MINI,
+            write_folder="results_v2/tecnico_planilha_gpt5mini",
+            max_turns=15,
+            reasoning=Intensity.MEDIUM,
+            verbosity=Intensity.MEDIUM,
+            reflection=False,
+            use_fundamental_analysis=True,
+            use_material_facts=True,
+            use_technical_analysis=True,
+            technical_variant=TechnicalVariant.PLANILHA,
+        ),
+    },
+    {
+        "name": "Variação 6: Técnico via imagem (GPT-5-mini)",
+        "config": ExperimentMetadata(
+            model=Model.GPT_5_MINI,
+            write_folder="results_v2/tecnico_imagem_gpt5mini",
+            max_turns=15,
+            reasoning=Intensity.MEDIUM,
+            verbosity=Intensity.MEDIUM,
+            reflection=False,
+            use_fundamental_analysis=True,
+            use_material_facts=True,
+            use_technical_analysis=True,
+            technical_variant=TechnicalVariant.IMAGEM,
+        ),
+    },
+    {
+        "name": "Variação 7: Técnico híbrido planilha+imagem (GPT-5-mini)",
+        "config": ExperimentMetadata(
+            model=Model.GPT_5_MINI,
+            write_folder="results_v2/tecnico_hibrido_gpt5mini",
+            max_turns=15,
+            reasoning=Intensity.MEDIUM,
+            verbosity=Intensity.MEDIUM,
+            reflection=False,
+            use_fundamental_analysis=True,
+            use_material_facts=True,
+            use_technical_analysis=True,
+            technical_variant=TechnicalVariant.HIBRIDO,
         ),
     },
 ]

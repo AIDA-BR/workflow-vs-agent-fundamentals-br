@@ -101,7 +101,21 @@ dos últimos 6 meses da empresa. Utilize essas informações como contexto quali
 2. Avaliar riscos não refletidos diretamente nos números (regulatórios, operacionais, de governança).
 3. Incorporar perspectivas de crescimento ou deterioração decorrentes de eventos recentes.
 
-O relatório de fatos relevantes NÃO substitui a análise quantitativa — ele a complementa."""
+O relatório de fatos relevantes NÃO substitui a análise quantitativa — ele a complementa.
+
+# Análise Técnica
+
+Se fornecido, você também receberá um relatório de análise técnica da ação, baseado em
+indicadores de preço e volume (médias móveis, MACD, Bandas de Bollinger, RSI e volume).
+O relatório traz um sinal direcional (Alta, Baixa ou Neutro), níveis de suporte e
+resistência e a leitura de cada indicador. Utilize essas informações para:
+
+1. Avaliar o momento (timing) de entrada ou saída e o risco de curto/médio prazo.
+2. Definir um preço-alvo mais aderente aos níveis técnicos de suporte e resistência.
+3. Confrontar a leitura técnica com a fundamentalista (ex.: empresa barata mas em
+   tendência técnica de baixa).
+
+A análise técnica complementa — não substitui — a análise fundamentalista e os fatos relevantes."""
 
 MANAGER_DESCRIPTION = "A financial manager agent for the Brazilian stock market"
 

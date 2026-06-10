@@ -20,6 +20,14 @@ class Intensity(StrEnum):
     HIGH = "high"
 
 
+class TechnicalVariant(StrEnum):
+    """Modalidade de apresentação dos indicadores ao analista técnico."""
+
+    PLANILHA = "planilha"
+    IMAGEM = "imagem"
+    HIBRIDO = "hibrido"
+
+
 class ExperimentMetadata(BaseModel):
     model: Model = Field(description="Model to be used")
     max_turns: int = Field(default=30, description="Maximum number of turns")
@@ -34,6 +42,17 @@ class ExperimentMetadata(BaseModel):
     material_facts_model: Model | None = Field(
         default=None,
         description="Model for material facts summarizer. Defaults to model if None.",
+    )
+    use_technical_analysis: bool = Field(
+        default=False, description="Enable technical analysis module"
+    )
+    technical_variant: TechnicalVariant | None = Field(
+        default=None,
+        description="Modality for the technical analyst: planilha, imagem or hibrido.",
+    )
+    technical_model: Model | None = Field(
+        default=None,
+        description="Model for the technical analyst. Defaults to model if None.",
     )
 
 
