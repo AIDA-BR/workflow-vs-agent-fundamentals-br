@@ -158,6 +158,7 @@ async def get_six_month_result(
     model: Model,
     cache: dict,
     raw_facts_cache: dict | None = None,
+    result_cache: dict | None = None,
 ) -> tuple[SixMonthSummary, AgentResult]:
     """Como get_six_month_summary, mas também retorna o resultado no padrão JSON.
 
@@ -165,7 +166,28 @@ async def get_six_month_result(
     consolidação) num dicionário compatível com ``AgentResult`` (usage/steps/
     time/output), permitindo salvar o analista de fatos relevantes no mesmo
     formato JSON do gestor e do analista fundamentalista.
+
+    Parameters
+    ----------
+    result_cache : dict | None
+        Cache do resultado consolidado de 6 meses, chaveado por
+        "{stock_id}|{YYYY-MM-DD}|{model}". Quando fornecido e já contém a chave,
+        o relatório (resumo mensal + consolidação) NÃO é recomputado: retorna-se
+        o resumo cacheado com usage zerado (custo marginal nulo). Permite rodar o
+        analista de fatos relevantes uma única vez e reaproveitá-lo entre
+        experimentos que compartilham o mesmo modelo e as mesmas datas.
     """
+    cache_key = f"{stock.stock_id}|{analysis_date.strftime('%Y-%m-%d')}|{model}"
+    if result_cache is not None and cache_key in result_cache:
+        summary = SixMonthSummary(**result_cache[cache_key])
+        agent_result = AgentResult(
+            usage=LLMUsage(requests=0, input_tokens=0, output_tokens=0, total_tokens=0),
+            steps=[],
+            time=0.0,
+            output=summary.model_dump(),
+        )
+        return summary, agent_result
+
     usage_acc = _UsageAccumulator()
     start_time = time.time()
     summary = await get_six_month_summary(
@@ -184,6 +206,8 @@ async def get_six_month_result(
         time=elapsed_time,
         output=summary.model_dump(),
     )
+    if result_cache is not None:
+        result_cache[cache_key] = summary.model_dump()
     return summary, agent_result
 
 
