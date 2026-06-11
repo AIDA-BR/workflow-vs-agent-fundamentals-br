@@ -161,6 +161,8 @@ async def run_experiment(
     experiment: ExperimentMetadata,
     stocks: list,
     raw_facts_cache: dict | None = None,
+    monthly_summary_cache: dict | None = None,
+    six_month_cache: dict | None = None,
 ) -> None:
     """
     Run a single experiment configuration with the given stocks.
@@ -174,10 +176,18 @@ async def run_experiment(
     raw_facts_cache : dict | None
         Pre-fetched raw material facts keyed by "{ticker}|{year}|{month}".
         When provided, skips the fetch step inside get_monthly_summary.
+    monthly_summary_cache : dict | None
+        Shared monthly-summary cache keyed by (stock_id, year, month). When
+        provided, it is reused across experiments (the material facts analyst is
+        computed once and shared). When None, a per-folder cache is loaded.
+    six_month_cache : dict | None
+        Shared 6-month consolidated-report cache keyed by
+        "{stock_id}|{date}|{model}". When provided, experiments sharing the same
+        material facts model and dates reuse the consolidated report instead of
+        recomputing it (zero marginal tokens on reuse).
     """
     manager_decisions = []
     fundamental_analyses = []
-    monthly_summary_cache: dict = {}
 
     if os.path.exists(f"{experiment.write_folder}/results_sample.json"):
         with open(f"{experiment.write_folder}/results_sample.json") as f:
@@ -187,12 +197,18 @@ async def run_experiment(
             manager_decisions = json.load(f)
 
     cache_path = f"{experiment.write_folder}/monthly_summary_cache.json"
+    # Use the shared cache when provided; otherwise build a per-folder one.
+    if monthly_summary_cache is None:
+        monthly_summary_cache = {}
+    # Always merge any per-folder cache so resume stays efficient (without
+    # overwriting entries already present in a shared cache).
     if os.path.exists(cache_path):
         with open(cache_path) as f:
             raw_cache = json.load(f)
         for k, v in raw_cache.items():
             parts = k.split("|")
-            monthly_summary_cache[(parts[0], int(parts[1]), int(parts[2]))] = MonthlySummary(**v)
+            key = (parts[0], int(parts[1]), int(parts[2]))
+            monthly_summary_cache.setdefault(key, MonthlySummary(**v))
 
     while True:
         is_error = False
@@ -288,6 +304,7 @@ async def run_experiment(
                             model=facts_model,
                             cache=monthly_summary_cache,
                             raw_facts_cache=raw_facts_cache,
+                            result_cache=six_month_cache,
                         )
                         material_facts_report_str = format_six_month_report(six_month_summary)
 
