@@ -122,6 +122,7 @@ async def run() -> None:
 
                 for record in stock_records:
                     analysis_date = record["DATA_DO_PREGAO"]
+                    analysis_dt = datetime.fromisoformat(analysis_date)
 
                     manager_path = f"{WRITE_FOLDER}/{stock_id}/{analysis_date}_manager_0.json"
                     if os.path.exists(manager_path):
@@ -154,7 +155,7 @@ async def run() -> None:
                     decision = await financial_manager.run(
                         stock=stock,
                         stock_price=daily_stock_price,
-                        date=analysis_date,
+                        date=analysis_dt,
                         max_turns=MAX_TURNS,
                         indicators=indicators_str,
                         material_facts_report=material_facts_report_str,
@@ -176,7 +177,7 @@ async def run() -> None:
 
                     parsed = _parse_financial_manager_output(
                         decision,
-                        datetime.fromisoformat(analysis_date),
+                        analysis_dt,
                         end_time - start_time,
                         stock_id,
                     )
