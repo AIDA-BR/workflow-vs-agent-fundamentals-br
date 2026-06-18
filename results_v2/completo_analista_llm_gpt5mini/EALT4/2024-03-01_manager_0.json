@@ -1,0 +1,119 @@
+{
+    "usage": {
+        "requests": 6,
+        "input_tokens": 55207,
+        "output_tokens": 8418,
+        "total_tokens": 63625
+    },
+    "steps": [
+        {
+            "id": "rs_0bd68b98e692b017006a3228cf88648195a8e81419edbf7e71",
+            "summary": [],
+            "type": "reasoning",
+            "content": []
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Using data from the March 01, 2024 row\\npatrimonio = 231271000.0\\nvpa_tab = 0.656703\\nlucro_liq_12m = 27209000.0\\npreco = 11.04\\ndivida_liq = 112733000.0\\nebit_12m = 40034000.0\\nreceita_12m = 360515000.0\\nativo = 548977000.0\\n\\n# Compute implied shares from VPA\\nshares_from_vpa = patrimonio / vpa_tab\\nshares_from_vpa\\n\\n# Compute LPA from net income and shares\\nlpa_calc = lucro_liq_12m / shares_from_vpa\\nlpa_calc\\n\\n# Compare with LPA_tab (given)\\nlpa_tab = 0.51441\\n\\n# Market cap and other metrics\\nmarket_cap = preco * shares_from_vpa\\nev = market_cap + divida_liq - 6235000.0  # subtract disponibilidades\\n\\np_over_vp = preco / vpa_tab\\np_over_l = market_cap / lucro_liq_12m\\np_over_ebit = market_cap / ebit_12m\\nev_over_ebit = ev / ebit_12m\\n\\nshares_from_vpa, lpa_calc, lpa_tab, market_cap, ev, p_over_vp, p_over_l, p_over_ebit, ev_over_ebit, receita_12m/ativo\\n\"} }",
+            "call_id": "call_asgrfUnqzDppIEvp0Xf4FQBb",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0bd68b98e692b017006a3228dc06ac81959623907d45c66c4a",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_asgrfUnqzDppIEvp0Xf4FQBb",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb''\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Let's actually print the computed values\\npatrimonio = 231271000.0\\nvpa_tab = 0.656703\\nlucro_liq_12m = 27209000.0\\npreco = 11.04\\ndivida_liq = 112733000.0\\nebit_12m = 40034000.0\\nreceita_12m = 360515000.0\\nativo = 548977000.0\\ndisponibilidades = 6235000.0\\n\\nshares_from_vpa = patrimonio / vpa_tab\\nlpa_calc = lucro_liq_12m / shares_from_vpa\\n\\nmarket_cap = preco * shares_from_vpa\\nev = market_cap + divida_liq - disponibilidades\\n\\np_over_vp = preco / vpa_tab\\np_over_l = market_cap / lucro_liq_12m\\np_over_ebit = market_cap / ebit_12m\\nev_over_ebit = ev / ebit_12m\\n\\nprint('Shares implied by VPA:', shares_from_vpa)\\nprint('Calculated LPA (net income / shares):', lpa_calc)\\nprint('LPA from table:', 0.51441)\\nprint('Market cap (R$):', market_cap)\\nprint('Enterprise Value (R$):', ev)\\nprint('P/VP (price divided by VPA):', p_over_vp)\\nprint('P/L (market cap / net income):', p_over_l)\\nprint('P/EBIT (market cap / EBIT):', p_over_ebit)\\nprint('EV/EBIT:', ev_over_ebit)\\nprint('Giro ativos (receita/ativo):', receita_12m/ativo)\\n\"} }",
+            "call_id": "call_oxhIAs7pDx76JPpncOR79txh",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0bd68b98e692b017006a3228e0fcec8195a04e0a475517ac11",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_oxhIAs7pDx76JPpncOR79txh",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Shares implied by VPA: 352169854.5613466\\\\nCalculated LPA (net income / shares): 0.0772610138192856\\\\nLPA from table: 0.51441\\\\nMarket cap (R$): 3887955194.357266\\\\nEnterprise Value (R$): 3994453194.357266\\\\nP/VP (price divided by VPA): 16.811252575365117\\\\nP/L (market cap / net income): 142.89224868085068\\\\nP/EBIT (market cap / EBIT): 97.11633097760068\\\\nEV/EBIT: 99.77651981708712\\\\nGiro ativos (receita/ativo): 0.6567032862943256\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0bd68b98e692b017006a3228e77b70819593450c5561006965",
+            "summary": [],
+            "type": "reasoning",
+            "content": []
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Recompute core metrics using corrected VPA and LPA scaling\\npatrimonio = 231271000.0\\ndivida_liq = 112733000.0\\ndisponibilidades = 6235000.0\\nreceita_12m = 360515000.0\\nebit_12m = 40034000.0\\nlucro_liq_12m = 27209000.0\\npreco_fechamento = 11.04\\n\\n# Use VPA from earlier rows which seem to be in units *1000 in table: 10278.711111 -> 10.278711111\\nvpa_adj = 10278.711111 / 1000.0\\n\\n# Calculate shares\\nshares = patrimonio / vpa_adj\\nmarket_cap = preco_fechamento * shares\\n# Alternatively compute market cap from previous approx 22.5M shares ~ price*22.5M\\n\\n# Enterprise value using d\u00edvida l\u00edquida (already net of cash) -> EV = market_cap + divida_liq\\nev = market_cap + divida_liq\\n\\np_over_vp = preco_fechamento / vpa_adj\\np_over_l = market_cap / lucro_liq_12m\\np_over_ebit = market_cap / ebit_12m\\nev_over_ebit = ev / ebit_12m\\nroic = ebit_12m / (ativo - disponibilidades - (0)) if True else None\\n\\nshares, market_cap, ev, p_over_vp, p_over_l, p_over_ebit, ev_over_ebit\\n\\n# print nicely\\nprint(f'Shares (implied): {shares:,.0f}')\\nprint(f'Market cap (R$): {market_cap:,.0f}')\\nprint(f'Enterprise Value (R$): {ev:,.0f}')\\nprint(f'P/VP (preco/VPA): {p_over_vp:.2f}x')\\nprint(f'P/L (market cap / lucro): {p_over_l:.2f}x')\\nprint(f'P/EBIT (market cap / EBIT): {p_over_ebit:.2f}x')\\nprint(f'EV/EBIT: {ev_over_ebit:.2f}x')\\nprint(f'Receita 12m: {receita_12m:,.0f}; EBIT 12m: {ebit_12m:,.0f}; Lucro 12m: {lucro_liq_12m:,.0f}')\\nprint(f'Patrim\u00f4nio L\u00edquido: {patrimonio:,.0f}; D\u00edvida L\u00edquida: {divida_liq:,.0f}')\\nprint('\\\\nAssumptions: VPA taken as 10278.711111/1000 =', vpa_adj)\\n\\n# target price as 1.2 * VPA\\ntarget_price = vpa_adj * 1.2\\nprint('Target price (P/VP 1.2x):', round(target_price,2))\\n\\n# upside from current price\\nupside = (target_price - preco_fechamento) / preco_fechamento * 100\\nprint('Upside to target (%):', round(upside,2))\\n\\n# compute P/L using LPA from earlier (LPA 1209.288889/1000 = 1.209288889)\\nlpa_adj = 1209.288889 / 1000.0\\npl = preco_fechamento / lpa_adj\\nprint('LPA adj:', lpa_adj, 'P/L (price/LPA):', round(pl,2))\\n\\n# P/VP using market cap / equity vs price/vpa: ensure consistency\\np_over_vp_alt = market_cap / patrimonio\\nprint('Market cap / Patrim\u00f4nio (P/V):', round(p_over_vp_alt,2))\\n\\n# EV/EBIT if using net debt already included (divida_liq is net debt?)\\n\\n\"}}",
+            "call_id": "call_W8mWWSBWGZg9xArqtpLhjlYk",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0bd68b98e692b017006a3228fb8aa88195a9be3c01cb0b7e1e",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_W8mWWSBWGZg9xArqtpLhjlYk",
+            "output": "{'status': 'success', 'report': 'StdOut:\\nb\\'\\'\\nStdErr:\\nb\\'Traceback (most recent call last):\\\\n  File \"<string>\", line 25, in <module>\\\\n    roic = ebit_12m / (ativo - disponibilidades - (0)) if True else None\\\\n                       ^^^^^\\\\nNameError: name \\\\\\'ativo\\\\\\' is not defined\\\\n\\''}",
+            "type": "function_call_output"
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Fix by defining ativo variable and rerun\\npatrimonio = 231271000.0\\ndivida_liq = 112733000.0\\ndisponibilidades = 6235000.0\\nreceita_12m = 360515000.0\\nebit_12m = 40034000.0\\nlucro_liq_12m = 27209000.0\\npreco_fechamento = 11.04\\nativo = 548977000.0\\n\\nvpa_adj = 10278.711111 / 1000.0\\nshares = patrimonio / vpa_adj\\nmarket_cap = preco_fechamento * shares\\nev = market_cap + divida_liq\\np_over_vp = preco_fechamento / vpa_adj\\np_over_l = market_cap / lucro_liq_12m\\np_over_ebit = market_cap / ebit_12m\\nev_over_ebit = ev / ebit_12m\\n\\nprint(f'Shares (implied): {shares:,.0f}')\\nprint(f'Market cap (R$): {market_cap:,.0f}')\\nprint(f'Enterprise Value (R$): {ev:,.0f}')\\nprint(f'P/VP (preco/VPA): {p_over_vp:.2f}x')\\nprint(f'P/L (market cap / lucro): {p_over_l:.2f}x')\\nprint(f'P/EBIT (market cap / EBIT): {p_over_ebit:.2f}x')\\nprint(f'EV/EBIT: {ev_over_ebit:.2f}x')\\nprint(f'Receita 12m: {receita_12m:,.0f}; EBIT 12m: {ebit_12m:,.0f}; Lucro 12m: {lucro_liq_12m:,.0f}')\\nprint(f'Patrim\u00f4nio L\u00edquido: {patrimonio:,.0f}; D\u00edvida L\u00edquida: {divida_liq:,.0f}')\\nprint('\\\\nAssumptions: VPA taken as 10278.711111/1000 =', vpa_adj)\\n\\n# target price as 1.2 * VPA\\ntarget_price = vpa_adj * 1.2\\nprint('Target price (P/VP 1.2x):', round(target_price,2))\\nupside = (target_price - preco_fechamento) / preco_fechamento * 100\\nprint('Upside to target (%):', round(upside,2))\\n\\nlpa_adj = 1209.288889 / 1000.0\\npl_price_per_lpa = preco_fechamento / lpa_adj\\nprint('LPA adj:', lpa_adj, 'P/L (price/LPA):', round(pl_price_per_lpa,2))\\n\\np_over_vp_alt = market_cap / patrimonio\\nprint('Market cap / Patrim\u00f4nio (P/V):', round(p_over_vp_alt,2))\\n\\n# Additional ratios\\nmargem_ebit = ebit_12m / receita_12m\\nmargem_liq = lucro_liq_12m / receita_12m\\nroa = ebit_12m / ativo\\nroe = lucro_liq_12m / patrimonio\\nprint('Margem EBIT:', round(margem_ebit*100,2),'%','Margem L\u00edquida:', round(margem_liq*100,2),'%')\\nprint('ROA (EBIT/Ativo):', round(roa*100,2),'%','ROE:', round(roe*100,2),'%')\\n\\n\"}}",
+            "call_id": "call_wocoR8ZuMFivZKmLgtOSYAhQ",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0bd68b98e692b017006a32290566008195ad3e531b21ce784b",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_wocoR8ZuMFivZKmLgtOSYAhQ",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Shares (implied): 22,500,000\\\\nMarket cap (R$): 248,400,000\\\\nEnterprise Value (R$): 361,133,000\\\\nP/VP (preco/VPA): 1.07x\\\\nP/L (market cap / lucro): 9.13x\\\\nP/EBIT (market cap / EBIT): 6.20x\\\\nEV/EBIT: 9.02x\\\\nReceita 12m: 360,515,000; EBIT 12m: 40,034,000; Lucro 12m: 27,209,000\\\\nPatrim\\\\xc3\\\\xb4nio L\\\\xc3\\\\xadquido: 231,271,000; D\\\\xc3\\\\xadvida L\\\\xc3\\\\xadquida: 112,733,000\\\\n\\\\nAssumptions: VPA taken as 10278.711111/1000 = 10.278711111\\\\nTarget price (P/VP 1.2x): 12.33\\\\nUpside to target (%): 11.73\\\\nLPA adj: 1.209288889 P/L (price/LPA): 9.13\\\\nMarket cap / Patrim\\\\xc3\\\\xb4nio (P/V): 1.07\\\\nMargem EBIT: 11.1 % Margem L\\\\xc3\\\\xadquida: 7.55 %\\\\nROA (EBIT/Ativo): 7.29 % ROE: 11.76 %\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0bd68b98e692b017006a32290e07808195b42f78d7b2a7e47f",
+            "summary": [],
+            "type": "reasoning",
+            "content": []
+        },
+        {
+            "arguments": "{\"inp\":{\"code\":\"# Compute adjusted net income excluding judicial gain and related metrics\\nmarket_cap = 248400000.0\\nlucro_liq_12m = 27209000.0\\njudicial_gain = 17202925.30\\nadjusted_net_income = lucro_liq_12m - judicial_gain\\np_over_l_adj = market_cap / adjusted_net_income\\n\\ndivida_bruta = 118968000.0\\npatrimonio = 231271000.0\\ndivbr_pat = divida_bruta / patrimonio * 100\\n\\nliq_corr = 1.05  # given approx\\n\\nprint('Adjusted net income (ex-judicial): R$', round(adjusted_net_income,2))\\nprint('P/L adjusted (market cap / ex-judicial net income):', round(p_over_l_adj,2),'x')\\nprint('D\u00edvida bruta / Patrim\u00f4nio (%):', round(divbr_pat,2),'%')\\nprint('Liquidez corrente (aprox):', liq_corr)\\n\\n# Summarize\\nmetrics = {\\n    'market_cap': market_cap,\\n    'ev': 361133000.0,\\n    'p_vp': 1.07,\\n    'p_l': 9.13,\\n    'p_l_adj': round(p_over_l_adj,2),\\n    'ev_ebit': 9.02,\\n    'margem_ebit_pct': 11.1,\\n    'margem_liq_pct': 7.55,\\n    'roe_pct': 11.76\\n}\\nmetrics\\n\"} }",
+            "call_id": "call_6qGZYfVdTudm4FoBTSrBgDKF",
+            "name": "code_interpreter",
+            "type": "function_call",
+            "id": "fc_0bd68b98e692b017006a32291822f881959e8f13585eeaa4e1",
+            "status": "completed"
+        },
+        {
+            "call_id": "call_6qGZYfVdTudm4FoBTSrBgDKF",
+            "output": "{'status': 'success', 'report': \"StdOut:\\nb'Adjusted net income (ex-judicial): R$ 10006074.7\\\\nP/L adjusted (market cap / ex-judicial net income): 24.82 x\\\\nD\\\\xc3\\\\xadvida bruta / Patrim\\\\xc3\\\\xb4nio (%): 51.44 %\\\\nLiquidez corrente (aprox): 1.05\\\\n'\\nStdErr:\\nb''\"}",
+            "type": "function_call_output"
+        },
+        {
+            "id": "rs_0bd68b98e692b017006a32291c587081959f9d0004c763d6c0",
+            "summary": [],
+            "type": "reasoning",
+            "content": []
+        },
+        {
+            "id": "msg_0bd68b98e692b017006a32292157dc81959251a05eeecacda4",
+            "content": [
+                {
+                    "annotations": [],
+                    "text": "{\"recommendation\":\"Manter\",\"justification\":\"Decis\u00e3o (data 2024-03-01): Manter.\\n\\nResumo r\u00e1pido e n\u00fameros-chave\\n- Cota\u00e7\u00e3o fechamento: R$ 11,04\\n- A\u00e7\u00f5es em circula\u00e7\u00e3o (impl\u00edcitas): ~22,5 milh\u00f5es \u2192 Market cap \u2248 R$ 248,4 milh\u00f5es\\n- D\u00edvida l\u00edquida: R$ 112,7 milh\u00f5es \u2192 EV \u2248 R$ 361,1 milh\u00f5es\\n- Receita 12m: R$ 360,5 milh\u00f5es; EBIT 12m: R$ 40,03 milh\u00f5es; Lucro L\u00edquido 12m: R$ 27,21 milh\u00f5es\\n- Margem EBIT \u2248 11,1%; Margem L\u00edquida \u2248 7,6%; ROE \u2248 11,8%\\n\\nM\u00faltiplos e avalia\u00e7\u00e3o\\n- P/VP (pre\u00e7o / VPA): \u2248 1,07x (pre\u00e7o ligeiramente acima do valor patrimonial)\\n- P/L (market cap / lucro reportado): \u2248 9,1x\\n- P/L ajustado (ex\u2011evento judicial n\u00e3o recorrente): \u2248 24,8x (lucro ajustado \u2248 R$ 10,01M)\\n- P/EBIT (market cap / EBIT): \u2248 6,2x\\n- EV/EBIT: \u2248 9,0x\\n\\nInterpreta\u00e7\u00e3o\\n- Pontos positivos: m\u00faltiplos operacionais (P/EBIT, EV/EBIT) e margens s\u00e3o compat\u00edveis com um perfil industrial razoavelmente saud\u00e1vel; alavancagem \u00e9 moderada (D\u00edvida Bruta / Patrim\u00f4nio \u2248 51%). O papel n\u00e3o est\u00e1 claramente caro em termos operacionais.\\n- Pontos de cautela: o lucro l\u00edquido de 12 meses inclui um alvar\u00e1 judicial (aprox. R$ 17,20M) reconhecido em nov/2023 \u2014 item pontual que inflou o lucro e melhora indicadores de lucro por a\u00e7\u00e3o. Excluso esse efeito, os m\u00faltiplos de lucro tornam\u2011se bem menos atraentes. Caixa operacional declarado \u00e9 reduzido e a divulga\u00e7\u00e3o tem sido esparsa (visibilidade limitada). Persiste risco judicial (STJ) que pode alterar o impacto final.\\n\\nRecomenda\u00e7\u00e3o e crit\u00e9rios\\n- Recomendo Manter (posi\u00e7\u00e3o neutra). Racional: avalia\u00e7\u00e3o operacional razo\u00e1vel, mas a qualidade do lucro est\u00e1 parcialmente contaminada por item n\u00e3o recorrente e h\u00e1 incertezas de liquidez/visibilidade. N\u00e3o h\u00e1 gatilho claro para aumentar posi\u00e7\u00e3o sem confirma\u00e7\u00e3o de recorr\u00eancia dos resultados operacionais ou resolu\u00e7\u00e3o favor\u00e1vel e definitiva do lit\u00edgio.\\n- Gatilhos operacionais: considerar acumula\u00e7\u00e3o gradual apenas se (i) queda significativa abaixo de R$ 9,0 (reduz risco/compra em desconto) ou (ii) confirma\u00e7\u00e3o de melhoria operacional recorrente e/ou resolu\u00e7\u00e3o clara do processo judicial.\\n- Reavalia\u00e7\u00e3o: ap\u00f3s divulga\u00e7\u00e3o do pr\u00f3ximo trimestre e qualquer movimenta\u00e7\u00e3o relevante no STJ.\\n\\nPre\u00e7o\u2011alvo\\n- Pre\u00e7o\u2011alvo (para realiza\u00e7\u00e3o/venda): R$ 12,33/a\u00e7\u00e3o.\\n- M\u00e9todo: crit\u00e9rio conservador baseado em pr\u00eamio moderado sobre VPA estimado (VPA \u2248 R$ 10,28 \u00d7 P/VP alvo 1,2 = R$ 12,33). Representa upside \u2248 11,7% vs cota\u00e7\u00e3o de 11,04 e reflete pr\u00eamio limitado por risco judicial e incerteza sobre recorr\u00eancia dos lucros.\",\"target_price\":12.33}",
+                    "type": "output_text",
+                    "logprobs": []
+                }
+            ],
+            "role": "assistant",
+            "status": "completed",
+            "type": "message"
+        }
+    ],
+    "time": 90.4014368057251,
+    "output": {
+        "recommendation": "Manter",
+        "justification": "Decis\u00e3o (data 2024-03-01): Manter.\n\nResumo r\u00e1pido e n\u00fameros-chave\n- Cota\u00e7\u00e3o fechamento: R$ 11,04\n- A\u00e7\u00f5es em circula\u00e7\u00e3o (impl\u00edcitas): ~22,5 milh\u00f5es \u2192 Market cap \u2248 R$ 248,4 milh\u00f5es\n- D\u00edvida l\u00edquida: R$ 112,7 milh\u00f5es \u2192 EV \u2248 R$ 361,1 milh\u00f5es\n- Receita 12m: R$ 360,5 milh\u00f5es; EBIT 12m: R$ 40,03 milh\u00f5es; Lucro L\u00edquido 12m: R$ 27,21 milh\u00f5es\n- Margem EBIT \u2248 11,1%; Margem L\u00edquida \u2248 7,6%; ROE \u2248 11,8%\n\nM\u00faltiplos e avalia\u00e7\u00e3o\n- P/VP (pre\u00e7o / VPA): \u2248 1,07x (pre\u00e7o ligeiramente acima do valor patrimonial)\n- P/L (market cap / lucro reportado): \u2248 9,1x\n- P/L ajustado (ex\u2011evento judicial n\u00e3o recorrente): \u2248 24,8x (lucro ajustado \u2248 R$ 10,01M)\n- P/EBIT (market cap / EBIT): \u2248 6,2x\n- EV/EBIT: \u2248 9,0x\n\nInterpreta\u00e7\u00e3o\n- Pontos positivos: m\u00faltiplos operacionais (P/EBIT, EV/EBIT) e margens s\u00e3o compat\u00edveis com um perfil industrial razoavelmente saud\u00e1vel; alavancagem \u00e9 moderada (D\u00edvida Bruta / Patrim\u00f4nio \u2248 51%). O papel n\u00e3o est\u00e1 claramente caro em termos operacionais.\n- Pontos de cautela: o lucro l\u00edquido de 12 meses inclui um alvar\u00e1 judicial (aprox. R$ 17,20M) reconhecido em nov/2023 \u2014 item pontual que inflou o lucro e melhora indicadores de lucro por a\u00e7\u00e3o. Excluso esse efeito, os m\u00faltiplos de lucro tornam\u2011se bem menos atraentes. Caixa operacional declarado \u00e9 reduzido e a divulga\u00e7\u00e3o tem sido esparsa (visibilidade limitada). Persiste risco judicial (STJ) que pode alterar o impacto final.\n\nRecomenda\u00e7\u00e3o e crit\u00e9rios\n- Recomendo Manter (posi\u00e7\u00e3o neutra). Racional: avalia\u00e7\u00e3o operacional razo\u00e1vel, mas a qualidade do lucro est\u00e1 parcialmente contaminada por item n\u00e3o recorrente e h\u00e1 incertezas de liquidez/visibilidade. N\u00e3o h\u00e1 gatilho claro para aumentar posi\u00e7\u00e3o sem confirma\u00e7\u00e3o de recorr\u00eancia dos resultados operacionais ou resolu\u00e7\u00e3o favor\u00e1vel e definitiva do lit\u00edgio.\n- Gatilhos operacionais: considerar acumula\u00e7\u00e3o gradual apenas se (i) queda significativa abaixo de R$ 9,0 (reduz risco/compra em desconto) ou (ii) confirma\u00e7\u00e3o de melhoria operacional recorrente e/ou resolu\u00e7\u00e3o clara do processo judicial.\n- Reavalia\u00e7\u00e3o: ap\u00f3s divulga\u00e7\u00e3o do pr\u00f3ximo trimestre e qualquer movimenta\u00e7\u00e3o relevante no STJ.\n\nPre\u00e7o\u2011alvo\n- Pre\u00e7o\u2011alvo (para realiza\u00e7\u00e3o/venda): R$ 12,33/a\u00e7\u00e3o.\n- M\u00e9todo: crit\u00e9rio conservador baseado em pr\u00eamio moderado sobre VPA estimado (VPA \u2248 R$ 10,28 \u00d7 P/VP alvo 1,2 = R$ 12,33). Representa upside \u2248 11,7% vs cota\u00e7\u00e3o de 11,04 e reflete pr\u00eamio limitado por risco judicial e incerteza sobre recorr\u00eancia dos lucros.",
+        "target_price": 12.33
+    }
+}
