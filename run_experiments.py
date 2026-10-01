@@ -2,16 +2,25 @@
 Run multiple experiment variations of the investment house workflow.
 
 This script executes 4 different experiment configurations, each with different
-models and enabled/disabled modules. Results are saved to results_v2/ with
-intuitive folder names for each variation.
+models and enabled/disabled modules. Results are saved to <output-root>/ (default:
+results/) with one folder per variation.
 
-Variations:
-1. Without material facts, GPT-5-mini → sem_fato_relevante_gpt5mini/
-2. Full system with GPT-5-mini → completo_gpt5mini/
-3. Full system with Sabiazinho-4 → completo_sabiazinho4/
-4. Hybrid: material facts with Sabiazinho-4, manager with GPT-5-mini → hibrido_fatos_sabiazinho4_gestor_gpt5mini/
+Variations (paper column in parentheses):
+1. Without material facts, GPT-5-mini → sem_fato_relevante_gpt5mini/ (Fund.Rule)
+2. Full system with GPT-5-mini → completo_gpt5mini/ (+FactsGPT)
+3. Full system with Sabiazinho-4 → completo_sabiazinho4/ (+FactsSabiá)
+4. Hybrid: material facts with Sabiazinho-4, manager with GPT-5-mini
+   → hibrido_fatos_sabiazinho4_gestor_gpt5mini/ (Hybrid)
+
+Runs are resumable: a stock/month whose output already exists in the folder is skipped.
+Use a fresh --output-root to re-run from scratch without touching the published results.
+
+Usage:
+    uv run run_experiments.py --output-root reproduced
+    uv run run_experiments.py --output-root reproduced --only sem_fato_relevante_gpt5mini completo_gpt5mini
 """
 
+import argparse
 import asyncio
 from dotenv import load_dotenv
 
@@ -31,13 +40,13 @@ _PREFETCH_YEAR_MONTHS = [
     if (y, m) >= (2023, 7) and (y, m) <= (2025, 11)
 ]
 
-# Define the 4 experiment variations
+# Define the 4 experiment variations. `write_folder` is relative to --output-root.
 EXPERIMENTS = [
     {
         "name": "Variação 1: Sem módulo de fato relevante (GPT-5-mini)",
         "config": ExperimentMetadata(
             model=Model.GPT_5_MINI,
-            write_folder="results_v2/sem_fato_relevante_gpt5mini",
+            write_folder="sem_fato_relevante_gpt5mini",
             max_turns=15,
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
@@ -50,7 +59,7 @@ EXPERIMENTS = [
         "name": "Variação 2: Sistema completo (GPT-5-mini)",
         "config": ExperimentMetadata(
             model=Model.GPT_5_MINI,
-            write_folder="results_v2/completo_gpt5mini",
+            write_folder="completo_gpt5mini",
             max_turns=15,
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
@@ -63,7 +72,7 @@ EXPERIMENTS = [
         "name": "Variação 3: Sistema completo (Sabiazinho-4)",
         "config": ExperimentMetadata(
             model=Model.SABIAZINHO_4,
-            write_folder="results_v2/completo_sabiazinho4",
+            write_folder="completo_sabiazinho4",
             max_turns=15,
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
@@ -77,7 +86,7 @@ EXPERIMENTS = [
         "config": ExperimentMetadata(
             model=Model.GPT_5_MINI,
             material_facts_model=Model.SABIAZINHO_4,
-            write_folder="results_v2/hibrido_fatos_sabiazinho4_gestor_gpt5mini",
+            write_folder="hibrido_fatos_sabiazinho4_gestor_gpt5mini",
             max_turns=15,
             reasoning=Intensity.MEDIUM,
             verbosity=Intensity.MEDIUM,
@@ -89,10 +98,34 @@ EXPERIMENTS = [
 ]
 
 
-async def main():
+def parse_args() -> argparse.Namespace:
+    folders = [e["config"].write_folder for e in EXPERIMENTS]
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "--output-root",
+        default="results",
+        help="Root folder where each variation's folder is written (default: results)",
+    )
+    parser.add_argument(
+        "--only",
+        nargs="+",
+        choices=folders,
+        metavar="FOLDER",
+        help=f"Run only these variations (choices: {', '.join(folders)})",
+    )
+    return parser.parse_args()
+
+
+async def main(output_root: str, only: list[str] | None = None):
     """Pre-fetch raw material facts once, then run all experiment variations sequentially."""
+    experiments = [e for e in EXPERIMENTS if only is None or e["config"].write_folder in only]
+    for e in experiments:
+        e["config"].write_folder = f"{output_root}/{e['config'].write_folder}"
+
     print("=" * 80)
-    print("INICIANDO EXECUÇÃO DAS 4 VARIAÇÕES DE EXPERIMENTO")
+    print(f"INICIANDO EXECUÇÃO DE {len(experiments)} VARIAÇÕES DE EXPERIMENTO")
     print("=" * 80)
     print()
 
@@ -107,7 +140,7 @@ async def main():
     print()
 
     # --- Run each experiment using the pre-fetched cache ---
-    for i, experiment_info in enumerate(EXPERIMENTS, 1):
+    for i, experiment_info in enumerate(experiments, 1):
         print("=" * 80)
         print(f"EXECUTANDO: {experiment_info['name']}")
         print(f"Saída: {experiment_info['config'].write_folder}/")
@@ -124,10 +157,11 @@ async def main():
         print()
 
     print("=" * 80)
-    print("TODAS AS 4 VARIAÇÕES FORAM EXECUTADAS COM SUCESSO!")
-    print("Resultados salvos em: results_v2/")
+    print("TODAS AS VARIAÇÕES FORAM EXECUTADAS COM SUCESSO!")
+    print(f"Resultados salvos em: {output_root}/")
     print("=" * 80)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    args = parse_args()
+    asyncio.run(main(args.output_root, args.only))

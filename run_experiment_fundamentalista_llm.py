@@ -5,22 +5,28 @@ tudo com GPT-5-mini.
 Motivação
 ---------
 Um revisor pediu a comparação do **analista fundamentalista via LLM** combinado com o
-**agente de fatos relevantes**. Todos os experimentos de `results_v2/` usam o analista
+**agente de fatos relevantes**. Todos os experimentos de `run_experiments.py` usam o analista
 fundamentalista determinístico (SQL), nunca o analista via LLM. Esta modalidade junta:
 
 - Analista fundamentalista **via LLM** — saídas já existentes em `results/manager/`
-  (modalidade "(Ferreira et al., 2026)", fundamental analysis only, sem fatos).
+  (modalidade "(Ferreira et al., 2026)" / Fund.LLM, fundamental analysis only, sem fatos).
 - Fatos relevantes **GPT-5-mini** — relatórios já existentes em
-  `results_v2/completo_gpt5mini/{ACAO}/{data}_material_facts_0.txt`.
+  `<input-root>/completo_gpt5mini/{ACAO}/{data}_material_facts_0.txt`.
 - Gestor **GPT-5-mini** — único componente efetivamente reexecutado aqui.
 
 Para otimizar, NÃO reexecutamos o analista nem o sumarizador de fatos: ambos são lidos
 do disco. Apenas o gestor roda. Resultado salvo em
-`results_v2/completo_analista_llm_gpt5mini/`.
+`<output-root>/completo_analista_llm_gpt5mini/`.
+
+Uso:
+    uv run run_experiment_fundamentalista_llm.py --output-root reproduced
+    # usando fatos relevantes de uma reexecução própria de run_experiments.py:
+    uv run run_experiment_fundamentalista_llm.py --input-root reproduced --output-root reproduced
 
 A lógica espelha `main_workflow.run_experiment`, reutilizando seus helpers.
 """
 
+import argparse
 import asyncio
 import json
 import os
@@ -48,10 +54,10 @@ MAX_TURNS = 15
 
 # Fonte dos indicadores do analista fundamentalista VIA LLM (já executado)
 ANALYST_LLM_FOLDER = "results/manager"
-# Fonte dos relatórios de fatos relevantes em GPT-5-mini (já executado)
-MATERIAL_FACTS_FOLDER = "results_v2/completo_gpt5mini"
-# Pasta de saída desta nova modalidade
-WRITE_FOLDER = "results_v2/completo_analista_llm_gpt5mini"
+# Fonte dos relatórios de fatos relevantes em GPT-5-mini (já executado); sobrescrito por --input-root
+MATERIAL_FACTS_FOLDER = "results/completo_gpt5mini"
+# Pasta de saída desta nova modalidade; sobrescrita por --output-root
+WRITE_FOLDER = "results/completo_analista_llm_gpt5mini"
 
 # Campos de "decisão anterior" que devem ser recalculados a cada passo a partir das
 # decisões do NOVO gestor (e não copiados da execução de origem).
@@ -202,5 +208,25 @@ async def run() -> None:
     print("=" * 80)
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "--input-root",
+        default="results",
+        help="Pasta raiz contendo completo_gpt5mini/ com os fatos relevantes (default: results)",
+    )
+    parser.add_argument(
+        "--output-root",
+        default="results",
+        help="Pasta raiz onde completo_analista_llm_gpt5mini/ é escrita (default: results)",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = parse_args()
+    MATERIAL_FACTS_FOLDER = f"{args.input_root}/completo_gpt5mini"
+    WRITE_FOLDER = f"{args.output_root}/completo_analista_llm_gpt5mini"
     asyncio.run(run())
