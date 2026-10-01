@@ -100,6 +100,8 @@ done
 cd ..
 ```
 
+(`caution: excluded filename not matched` messages are harmless.)
+
 Expected result:
 
 ```
@@ -120,7 +122,7 @@ The extracted files are git-ignored.
 
 ### 1. Install dependencies
 
-Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python ≥ 3.13 is installed automatically by uv).
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/). uv installs the Python version pinned in `.python-version` (3.13) automatically.
 
 ```bash
 uv sync
