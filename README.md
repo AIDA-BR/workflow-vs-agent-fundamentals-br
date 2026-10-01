@@ -52,6 +52,8 @@ Rerunning the experiments themselves (which calls the LLM APIs) is described in 
 ├── main.py                                # Agent vs workflow experiment (ICLR 2026 workshop paper)
 ├── manager_evaluation.ipynb               # Evaluation notebook → Table 1
 ├── evaluation_final.ipynb                 # Evaluation notebook of the ICLR 2026 workshop paper
+├── qlib_evaluation.ipynb                  # Traditional qlib/LightGBM baseline vs. the LLM agents
+├── qlib_baseline/                         # qlib sub-project (Python 3.12, own uv env) — see its README
 ├── dev.env                                # Environment variable template (copy to .env)
 ├── pyproject.toml / uv.lock
 ├── data/                                  # Databases and material-disclosure caches (zipped, see below)
@@ -85,6 +87,8 @@ All inputs are public data from the Brazilian securities commission (CVM) and B3
 | `material_facts.zip` → `material_facts/<TICKER>/*.md` | Disclosure PDFs converted to Markdown with docling | Same as above | Only as a fallback cache when an entry is missing from `raw_facts_cache.json` |
 | `gold.csv` | Reference indicator values for the agent vs workflow experiment | — | ICLR paper only (`PRICE_FILE`, must exist for `src/settings.py`) |
 | `terms.csv` | Definitions of the accounting terms (Portuguese) | — | Reference only |
+| `qlib_data.zip` → `qlib_data/` | qlib dataset (2017-01 → 2026-01, 176 B3 tickers): adjusted daily prices + point-in-time fundamentals | fin-difusion B3 qlib bundle (CVM + B3) | qlib baseline only |
+| `custom_features_example.csv` | **Synthetic** example of extra features (e.g. environmental) in the CSV format accepted by `qlib_baseline/csv_to_qlib.py` | — | qlib baseline tutorial |
 
 `raw_facts_cache.json` is complete for every stock and month used in the paper, so **no download from CVM happens** when it is present. If an entry is missing, `src/tools/material_facts.py` downloads the yearly IPE archive into `data/ipe_cache/` (created on demand, git-ignored) and converts the PDFs with docling.
 
@@ -228,3 +232,39 @@ results/<configuration>/
 ```
 
 Decision dates are the first business day of each month (B3 calendar), from 2024-01-02 to 2025-12-01. The evaluation only needs `results_sample.json` (prices) and `decisions_sample.json` (recommendations); the per-stock files are kept for inspection of the agents' reasoning.
+
+---
+
+## Traditional baseline (qlib)
+
+The agents above need several LLM calls per decision. The [`qlib_baseline/`](qlib_baseline/)
+sub-project asks whether a cheap quantitative pipeline gets a similar trading return on the **same
+9 stocks, 24 decision dates and evaluation**. It uses [Microsoft qlib](https://github.com/microsoft/qlib)
+Alpha158 factors, with or without the paper's fundamental indicators, and a LightGBM model retrained
+every month with D-1 data.
+
+```bash
+unzip -o data/qlib_data.zip -d data
+cd qlib_baseline && uv sync && cd ..          # separate Python 3.12 environment (qlib needs ≤3.12)
+qlib_baseline/.venv/bin/jupyter lab qlib_evaluation.ipynb
+```
+
+Results (same evaluation as Table 1; the best of the 8 qlib strategies is shown first):
+
+| Strategy | Trading return | Sharpe |
+|---|---|---|
+| qlib price (Alpha158), broad universe, threshold rule | 8.82% | 0.5309 |
+| qlib fundamentals (Alpha158 + 19 indicators), broad, threshold | 7.31% | 0.3248 |
+| qlib fundamentals, 9 stocks only, threshold | 4.23% | 0.2381 |
+| qlib price, 9 stocks only, threshold | 3.79% | 0.2686 |
+| qlib, rank rule (top-3 buy / bottom-3 sell), all 4 models | −1.70% … 0.98% | < 0.27 |
+| *Reference: always Comprar (monthly DCA), no model* | 8.89% | 0.4638 |
+| *Paper: +FactsGPT / Price (LLM)* | 14.44% / 18.04% | 1.0265 / 1.7188 |
+
+None of the qlib configurations matches the best LLM agents. Their returns come almost entirely
+from buying every month: the models predict a positive return for more than 90% of stock-months,
+and the cross-sectional signal is weak (Rank IC ≤ 0.08). See the notebook for details.
+
+[`qlib_baseline/README.md`](qlib_baseline/README.md) explains how the model works and how to **add new
+features** such as environmental factors: CSV → `csv_to_qlib.py` → `EXTRA_FEATURES` in `config.py`.
+
