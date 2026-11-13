@@ -438,25 +438,30 @@ async def fetch_all(
     headers = {"User-Agent": USER_AGENT, "Accept-Language": "pt-BR,pt;q=0.9"}
     async with httpx.AsyncClient(headers=headers, timeout=30.0, transport=transport) as client:
         robots, pacer = Robots(client), DomainPacer(min_interval)
-        queue: asyncio.Queue = asyncio.Queue()
-        for item in todo:
-            queue.put_nowait(item)
         done = 0
+        # Uma fila por site: com uma fila única, vários trabalhadores ficavam parados esperando a
+        # vez no mesmo site. Sites com mais notícias começam primeiro, porque definem o tempo total.
+        by_domain = by_domain_largest_first(todo)
+        slots = asyncio.Semaphore(concurrency)
 
-        async def worker():
+        async def drain(domain: str, items: list[tuple[str, str]]):
             nonlocal done
-            while True:
-                try:
-                    gnews_url, url, domain = queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    return
-                save_fetched(db, gnews_url, await fetch_one(client, robots, pacer, url, domain))
-                done += 1
-                if done % 100 == 0:
-                    logger.warning("baixados %d de %d", done, len(todo))
+            async with slots:
+                for gnews_url, url in items:
+                    save_fetched(db, gnews_url, await fetch_one(client, robots, pacer, url, domain))
+                    done += 1
+                    if done % 100 == 0:
+                        logger.warning("baixados %d de %d", done, len(todo))
 
-        await asyncio.gather(*(worker() for _ in range(concurrency)))
+        await asyncio.gather(*(drain(d, items) for d, items in by_domain))
     return done
+
+
+def by_domain_largest_first(todo) -> list[tuple[str, list[tuple[str, str]]]]:
+    groups: dict[str, list[tuple[str, str]]] = {}
+    for gnews_url, url, domain in todo:
+        groups.setdefault(domain, []).append((gnews_url, url))
+    return sorted(groups.items(), key=lambda kv: len(kv[1]), reverse=True)
 
 
 # ---------------------------------------------------------------------------
@@ -522,7 +527,7 @@ def main() -> None:
         "--all", action="store_true", help="além do piloto, baixa todas as decodificadas"
     )
     p.add_argument("--limit", type=int)
-    p.add_argument("--concurrency", type=int, default=8)
+    p.add_argument("--concurrency", type=int, default=16, help="sites baixados em paralelo")
     p.add_argument(
         "--min-interval", type=float, default=2.0, help="segundos entre pedidos ao mesmo site"
     )

@@ -185,3 +185,16 @@ def test_fetch_robots_inacessivel_bloqueia_o_site():
         return httpx.Response(200, text=ARTICLE, headers={"content-type": "text/html"})
 
     assert run_fetch(handler)["b.com"] == "robots"
+
+
+def test_by_domain_largest_first_agrupa_e_ordena():
+    todo = [
+        ("g1", "u1", "a"),
+        ("g2", "u2", "b"),
+        ("g3", "u3", "b"),
+        ("g4", "u4", "a"),
+        ("g5", "u5", "b"),
+    ]
+    groups = fb.by_domain_largest_first(todo)
+    assert [d for d, _ in groups] == ["b", "a"]
+    assert groups[0][1] == [("g2", "u2"), ("g3", "u3"), ("g5", "u5")]
